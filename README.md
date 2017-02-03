@@ -1,3 +1,5 @@
+Link to original [README](README)
+
 # Instructions for compiling Rosette using Vagrant (Ubuntu 16.04)
 
 1. vagrant up
