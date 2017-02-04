@@ -24,7 +24,7 @@
 
 ARCH		= linux
 
-CPPFLAGS	= -I ../h -I ../h/sys -DARCH_INC=\"$(ARCH).h\" -m32
+CPPFLAGS	= -g -I ../h -I ../h/sys -DARCH_INC=\"$(ARCH).h\" -m32
 
 #LDCC		= gcc -g $(W_STATIC) -DGCC27X -lm
 LDCC		= g++ -g $(W_STATIC) -DGCC27X -lm -m32
