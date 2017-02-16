@@ -2,7 +2,7 @@ Link to original [README](README)
 
 # Instructions for compiling Rosette using Vagrant (Ubuntu 16.04)
 
-1. vagrant up
+1. [vagrant](https://www.vagrantup.com/) up
 2. vagrant ssh
 3. cd /vagrant/
 4. sudo apt update && sudo apt upgrade
