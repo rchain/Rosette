@@ -2,12 +2,13 @@ Link to original [README](README)
 
 # Instructions for compiling Rosette using Vagrant (Ubuntu 16.04)
 
-1. [vagrant](https://www.vagrantup.com/) up
-2. vagrant ssh
-3. cd /vagrant/
-4. sudo apt update && sudo apt upgrade
-5. sudo apt install g++ g++-multilib
-6. make
+1. cd Rosette-VM/
+2. [vagrant](https://www.vagrantup.com/) up
+3. vagrant ssh
+4. cd /vagrant/
+5. sudo apt update && sudo apt upgrade
+6. sudo apt install g++ g++-multilib
+7. make
 
 Note the make command invokes the rbl.
 
