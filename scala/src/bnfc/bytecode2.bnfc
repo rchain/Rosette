@@ -1,0 +1,193 @@
+-- -*- mode: Haskell;-*- 
+-- Filename: bytecode.bnfc 
+-- Authors: stay@pyrofex.net
+-- Copyright: Not supplied 
+-- Description: A BNFC grammar for Rosette opcodes as bit strings
+-- ------------------------------------------------------------------------
+
+entrypoints Instructions ;
+InstrSeq . Instructions ::= [Instruction] ;
+separator Instruction "" ;
+
+Zero . Bit ::= "0" ;
+One . Bit ::= "1" ;
+OneBit . Bit1Arg ::= Bit ;
+ThreeBit . Bit3Arg ::= Bit Bit Bit ;
+FourBit . Bit4Arg ::= Bit Bit Bit Bit ;
+EightBit . Bit8Arg ::= Bit Bit Bit Bit Bit Bit Bit Bit ;
+TenBit . Bit10Arg ::= Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit ;
+SixteenBit . Bit16Arg ::= Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit Bit ;
+
+-- halt                    0000 0000 xxxx xxxx
+InstrHalt . Instruction ::=               "0" "0" "0" "0" "0" "0" "0" "0" Bit8Arg ;
+
+-- push                         0001 xxxx xxxx
+InstrPush . Instruction ::=               "0" "0" "0" "0" "0" "0" "0" "1" Bit8Arg ;
+
+-- pop                          0010 xxxx xxxx
+InstrPop . Instruction ::=                "0" "0" "0" "0" "0" "0" "1" "0" Bit8Arg ;
+
+-- nargs                        0011 nnnn nnnn             nargs <- n
+InstrNArgs . Instruction ::=              "0" "0" "0" "0" "0" "0" "1" "1" Bit8Arg ;
+
+-- alloc                        0100 nnnn nnnn             argvec <- new Tuple (n)
+InstrAlloc . Instruction ::=              "0" "0" "0" "0" "0" "1" "0" "0" Bit8Arg ;
+
+-- push/alloc                   0101 nnnn nnnn             push; alloc n
+InstrPushAlloc . Instruction ::=          "0" "0" "0" "0" "0" "1" "0" "1" Bit8Arg ;
+
+-- extend                       0110 vvvv vvvv             extend with litvec[v]
+InstrExtend . Instruction ::=             "0" "0" "0" "0" "0" "1" "1" "0" Bit8Arg ;
+
+-- 
+-- outstanding             0000 10pp pppp pppp n:8 x:8     pc <- p; outstanding <- n
+InstrOutstanding . Instruction ::=        "0" "0" "0" "0" "1" "0" Bit10Arg Bit8Arg Bit8Arg ;
+
+-- fork                         11pp pppp pppp
+InstrFork . Instruction ::=               "0" "0" "0" "0" "1" "1" Bit10Arg ;
+
+-- xmit/tag                0001 00nu mmmm vvvv             unwind if u;
+--                                                         invoke trgt with m args and tag = litvec[v]
+--                                                         nxt if n;
+InstrXmitTag . Instruction ::=            "0" "0" "0" "1" "0" "0" Bit1Arg Bit1Arg Bit4Arg Bit4Arg ;
+
+-- xmit/arg                     01un mmmm aaaa             same, but tag = arg[a]
+InstrXmitArg . Instruction ::=            "0" "0" "0" "1" "0" "1" Bit1Arg Bit1Arg Bit4Arg Bit4Arg ;
+
+-- xmit/reg                     10un mmmm rrrr             same, but tag = reg[r]
+InstrXmitReg . Instruction ::=            "0" "0" "0" "1" "1" "0" Bit1Arg Bit1Arg Bit4Arg Bit4Arg ;
+
+-- xmit                         11un mmmm mmmm             same, but use current tag
+InstrXmit . Instruction ::=               "0" "0" "0" "1" "1" "1" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- xmit/tag/xtnd           0010 00un mmmm mmmm v:8 x:8     tag = litvec[v]
+InstrXmitTagXtnd . Instruction ::=        "0" "0" "1" "0" "0" "0" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- xmit/arg/xtnd                01un mmmm mmmm a:8 x:8     tag = arg[a]
+InstrXmitArgXtnd . Instruction ::=        "0" "0" "1" "0" "0" "1" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- xmit/reg/xtnd                10un mmmm mmmm r:8 x:8     tag = reg[r]
+InstrXmitRegXtnd . Instruction ::=        "0" "0" "1" "0" "1" "0" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- send                         11un mmmm mmmm             tag = limbo
+InstrSend . Instruction ::=               "0" "0" "1" "0" "1" "1" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- applyprim/tag           0011 00un mmmm mmmm k:8 v:8     *litvec[v] <- apply prim[k] to m args
+InstrApplyPrimTag . Instruction ::=       "0" "0" "1" "1" "0" "0" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- applyprim/arg                01un mmmm mmmm k:8 a:8     arg[a] <- ""
+InstrApplyPrimArg . Instruction ::=       "0" "0" "1" "1" "0" "1" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- applyprim/reg                10un mmmm mmmm k:8 r:8     reg[r] <- ""
+InstrApplyPrimReg . Instruction ::=       "0" "0" "1" "1" "1" "0" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- applycmd                     11un mmmm mmmm k:8 x:8     apply prim[k] to m args; no result
+InstrApplyCmd . Instruction ::=           "0" "0" "1" "1" "1" "1" Bit1Arg Bit1Arg Bit8Arg Bit8Arg Bit8Arg ;
+
+-- rtn/tag                 0100 00xn vvvv vvvv             return using litvec[v] as tag
+InstrRtnTag . Instruction ::=             "0" "1" "0" "0" "0" "0" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- rtn/arg                      01xn aaaa aaaa             use arg[a] as tag
+InstrRtnArg . Instruction ::=             "0" "1" "0" "0" "0" "1" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- rtn/reg                      10xn rrrr rrrr             use reg[r] as tag
+InstrRtnReg . Instruction ::=             "0" "1" "0" "0" "1" "0" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- rtn                          11xn xxxx xxxx             use current tag
+InstrRtn . Instruction ::=                "0" "1" "0" "0" "1" "1" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- upcall rtn              0101 00xn vvvv vvvv             use litvec[v] as tag
+InstrUpcallRtn . Instruction ::=          "0" "1" "0" "1" "0" "0" Bit1Arg Bit1Arg Bit8Arg ;
+
+-- upcall resume                0100 xxxx xxxx
+InstrUpcallResume . Instruction ::=       "0" "1" "0" "1" "0" "1" "0" "0" Bit8Arg ;
+
+-- nxt                          0101 xxxx xxxx             invoke next strand
+InstrNxt . Instruction ::=                "0" "1" "0" "1" "0" "1" "0" "1" Bit8Arg ;
+
+-- jump                    0110 00nn nnnn nnnn             pc <- n
+InstrJump . Instruction ::=               "0" "1" "1" "0" "0" "0" Bit10Arg ;
+
+-- jump on #f                   01nn nnnn nnnn             if (rslt == #f) pc <- n
+InstrJumpOnF . Instruction ::=            "0" "1" "1" "0" "0" "1" Bit10Arg ;
+
+-- jump/cut                     10nn nnnn nnnn m:8 x:8     pc <- n; cut m levels off env
+InstrJumpCut . Instruction ::=            "0" "1" "1" "0" "1" "0" Bit10Arg Bit8Arg Bit8Arg ;
+
+-- lookup to arg           0111 aaaa vvvv vvvv             arg[a] <- lookup(litvec[v])
+InstrLookupToArg . Instruction ::=        "0" "1" "1" "1" Bit4Arg Bit8Arg ;
+
+-- lookup to reg           1000 rrrr vvvv vvvv             reg[r] <- lookup(litvec[v])
+InstrLookupToReg . Instruction ::=        "1" "0" "0" "0" Bit4Arg Bit8Arg ;
+
+-- xfer lex to arg         1001 illl oooo aaaa             arg[a] <- lex[i,l,o]
+InstrXferLexToArg . Instruction ::=       "1" "0" "0" "1" Bit1Arg Bit3Arg Bit4Arg Bit4Arg ;
+
+-- xfer lex to reg         1010 illl oooo rrrr             reg[r] <- lex[i,l,o]
+InstrXferLexToReg . Instruction ::=       "1" "0" "1" "0" Bit1Arg Bit3Arg Bit4Arg Bit4Arg ;
+
+-- xfer global to arg      1011 0000 aaaa aaaa g:16        arg[a] <- global[g]
+InstrXferGlobalToArg . Instruction ::=     "1" "0" "1" "1" "0" "0" "0" "0" Bit8Arg Bit16Arg ;
+
+-- xfer global to reg           0001 xxxx rrrr g:16        reg[r] <- global[g]
+InstrXferGlobalToReg . Instruction ::=     "1" "0" "1" "1" "0" "0" "0" "1" Bit4Arg Bit4Arg Bit16Arg ;
+
+-- xfer arg to arg              0010 dddd ssss             arg[d] <- arg[s]
+InstrXferArgToArg . Instruction ::=        "1" "0" "1" "1" "0" "0" "1" "0" Bit4Arg Bit4Arg ;
+
+-- xfer rslt to arg             0100 aaaa aaaa             arg[a] <- rslt
+InstrXferRsltToArg . Instruction ::=       "1" "0" "1" "1" "0" "1" "0" "0" Bit8Arg ;
+
+-- xfer arg to rslt             0101 aaaa aaaa             rslt <- arg[a]
+InstrXferArgToRslt . Instruction ::=       "1" "0" "1" "1" "0" "1" "0" "1" Bit8Arg ;
+
+-- xfer rslt to reg             0110 xxxx rrrr             reg[r] <- rslt
+InstrXferRsltToReg . Instruction ::=       "1" "0" "1" "1" "0" "1" "1" "0" Bit4Arg Bit4Arg ;
+
+-- xfer reg to rslt             0111 xxxx rrrr             rslt <- reg[r]
+InstrXferRegToRslt . Instruction ::=       "1" "0" "1" "1" "0" "1" "1" "1" Bit4Arg Bit4Arg ;
+
+-- xfer rslt to dest            1000 vvvv vvvv             *litvec[v] <- rslt
+InstrXferRsltToDest . Instruction ::=      "1" "0" "1" "1" "1" "0" "0" "0" Bit8Arg ;
+
+-- xfer src to rslt             1001 vvvv vvvv             rslt <- *litvec[v]
+InstrXferSrcToDest . Instruction ::=       "1" "0" "1" "1" "1" "0" "0" "1" Bit8Arg ;
+
+-- xfer ind lit to arg     1011 1010 aaaa vvvv             arg[a] <- litvec[v]
+InstrXferIndLitToArg . Instruction ::=     "1" "0" "1" "1" "1" "0" "1" "0" Bit4Arg Bit4Arg ;
+
+-- xfer ind lit to reg          1011 rrrr vvvv             reg[r] <- litvec[v]
+InstrXferIndLitToReg . Instruction ::=     "1" "0" "1" "1" "1" "0" "1" "1" Bit4Arg Bit4Arg ;
+
+-- xfer ind lit to rslt         1100 vvvv vvvv             rslt <- litvec[v]
+InstrXferIndLitToRslt . Instruction ::=    "1" "0" "1" "1" "1" "1" "0" "0" Bit8Arg ;
+
+-- xfer imm lit to arg     1100 0rrr aaaa aaaa             arg[a] <- fixnum(r)
+InstrXferImmLitToArg . Instruction ::=     "1" "1" "0" "0" "0" Bit3Arg Bit8Arg ;
+
+--                              1000 aaaa aaaa             arg[a] <- #t
+InstrXferTrueToArg . Instruction ::=       "1" "1" "0" "0" "1" "0" "0" "0" Bit8Arg ;
+
+--                              1001 aaaa aaaa             arg[a] <- #f
+InstrXferFalseToArg . Instruction ::=      "1" "1" "0" "0" "1" "0" "0" "1" Bit8Arg ;
+
+--                              1010 aaaa aaaa             arg[a] <- nil
+InstrXferNilToArg . Instruction ::=        "1" "1" "0" "0" "1" "0" "1" "0" Bit8Arg ;
+
+--                              1011 aaaa aaaa             arg[a] <- #niv
+InstrXferNivToArg . Instruction ::=        "1" "1" "0" "0" "1" "0" "1" "1" Bit8Arg ;
+
+-- xfer imm lit to reg     1101 0rrr xxxx rrrr             reg[r] <- fixnum(r)
+InstrXferImmLitToReg . Instruction ::=     "1" "1" "0" "1" "0" Bit3Arg Bit4Arg Bit4Arg;
+
+--                              1000 xxxx rrrr             reg[r] <- #t
+InstrXferTrueToReg . Instruction ::=       "1" "1" "0" "1" "1" "0" "0" "0" Bit4Arg Bit4Arg;
+
+--                              1001 xxxx rrrr             reg[r] <- #f
+InstrXferFalseToReg . Instruction ::=      "1" "1" "0" "1" "1" "0" "0" "1" Bit4Arg Bit4Arg;
+
+--                              1010 xxxx rrrr             reg[r] <- nil
+InstrXferNilToReg . Instruction ::=        "1" "1" "0" "1" "1" "0" "1" "0" Bit4Arg Bit4Arg;
+
+--                              1011 xxxx rrrr             reg[r] <- #niv
+InstrXferNivToReg . Instruction ::=        "1" "1" "0" "1" "1" "0" "1" "1" Bit4Arg Bit4Arg;

@@ -1,0 +1,196 @@
+-- -*- mode: Haskell;-*- 
+-- Filename: assembly.bnfc 
+-- Authors: stay
+-- Copyright: Not supplied 
+-- Description: A BNFC grammar for Rosette opcodes as bit strings
+-- ------------------------------------------------------------------------
+
+entrypoints Instructions ;
+
+InstructionSeq . Instructions ::= [Instruction] ;
+separator Instruction "" ;
+
+token Bit (["01"]) ;
+token HexThree ({"0x"} ["01234567"]) ;
+token HexFour ({"0x"} ["0123456789abcdefABCDEF"]) ;
+token HexEight ({"0x"} ["0123456789abcdefABCDEF"] ["0123456789abcdefABCDEF"]) ;
+token HexTen ({"0x"} ["0123"] ["0123456789abcdefABCDEF"] ["0123456789abcdefABCDEF"]) ;
+token HexSixteen ({"0x"} ["0123456789abcdefABCDEF"] ["0123456789abcdefABCDEF"] ["0123456789abcdefABCDEF"] ["0123456789abcdefABCDEF"]) ;
+
+rules CastHexFour ::= HexFour | HexThree | Bit;
+rules CastHexEight ::= HexEight | HexFour | HexThree | Bit;
+rules CastHexTen ::= HexTen | HexEight | HexFour | HexThree | Bit;
+rules CastHexSixteen ::= HexSixteen | HexTen | HexEight | HexFour | HexThree | Bit;
+
+-- halt                    0000 0000 xxxx xxxx
+InstrHalt . Instruction ::=               "halt" ;
+
+-- push                         0001 xxxx xxxx
+InstrPush . Instruction ::=               "push" ;
+
+-- pop                          0010 xxxx xxxx
+InstrPop . Instruction ::=                "pop" ;
+
+-- nargs                        0011 nnnn nnnn             nargs <- n
+InstrNArgs . Instruction ::=              "nargs" CastHexEight ;
+
+-- alloc                        0100 nnnn nnnn             argvec <- new Tuple (n)
+InstrAlloc . Instruction ::=              "alloc" CastHexEight ;
+
+-- push/alloc                   0101 nnnn nnnn             push; alloc n
+InstrPushAlloc . Instruction ::=          "push" "/" "alloc" CastHexEight ;
+
+-- extend                       0110 vvvv vvvv             extend with litvec[v]
+InstrExtend . Instruction ::=             "extend" CastHexEight ;
+
+-- outstanding             0000 10pp pppp pppp n:8 x:8     pc <- p; outstanding <- n
+InstrOutstanding . Instruction ::=        "outstanding" CastHexTen CastHexEight CastHexEight ;
+
+-- fork                         11pp pppp pppp
+InstrFork . Instruction ::=               "fork" CastHexTen ;
+
+-- xmit/tag                0001 00nu mmmm vvvv             unwind if u;
+--                                                         invoke trgt with m args and tag = litvec[v]
+--                                                         nxt if n;
+InstrXmitTag . Instruction ::=            "xmit" "/" "tag" Bit Bit CastHexFour CastHexFour ;
+
+-- xmit/arg                     01un mmmm aaaa             same, but tag = arg[a]
+InstrXmitArg . Instruction ::=            "xmit" "/" "arg" Bit Bit CastHexFour CastHexFour ;
+
+-- xmit/reg                     10un mmmm rrrr             same, but tag = reg[r]
+InstrXmitReg . Instruction ::=            "xmit" "/" "reg" Bit Bit CastHexFour CastHexFour ;
+
+-- xmit                         11un mmmm mmmm             same, but use current tag
+InstrXmit . Instruction ::=               "xmit" Bit Bit CastHexEight ;
+
+-- xmit/tag/xtnd           0010 00un mmmm mmmm v:8 x:8     tag = litvec[v]
+InstrXmitTagXtnd . Instruction ::=        "xmit" "/" "tag" "/" "xtnd" Bit Bit CastHexEight CastHexEight ;
+
+-- xmit/arg/xtnd                01un mmmm mmmm a:8 x:8     tag = arg[a]
+InstrXmitArgXtnd . Instruction ::=        "xmit" "/" "arg" "/" "xtnd" Bit Bit CastHexEight CastHexEight ;
+
+-- xmit/reg/xtnd                10un mmmm mmmm r:8 x:8     tag = reg[r]
+InstrXmitRegXtnd . Instruction ::=        "xmit" "/" "reg" "/" "xtnd" Bit Bit CastHexEight CastHexEight ;
+
+-- send                         11un mmmm mmmm             tag = limbo
+InstrSend . Instruction ::=               "send" Bit Bit CastHexEight ;
+
+-- applyprim/tag           0011 00un mmmm mmmm k:8 v:8     *litvec[v] <- apply prim[k] to m args
+InstrApplyPrimTag . Instruction ::=       "applyprim" "/" "tag" Bit Bit CastHexEight CastHexEight CastHexEight ;
+
+-- applyprim/arg                01un mmmm mmmm k:8 a:8     arg[a] <- ""
+InstrApplyPrimArg . Instruction ::=       "applyprim" "/" "arg" Bit Bit CastHexEight CastHexEight CastHexEight ;
+
+-- applyprim/reg                10un mmmm mmmm k:8 r:8     reg[r] <- ""
+InstrApplyPrimReg . Instruction ::=       "applyprim" "/" "reg" Bit Bit CastHexEight CastHexEight CastHexEight ;
+
+-- applycmd                     11un mmmm mmmm k:8 x:8     apply prim[k] to m args; no result
+InstrApplyCmd . Instruction ::=           "applycmd" Bit Bit CastHexEight CastHexEight ;
+
+-- rtn/tag                 0100 00xn vvvv vvvv             return using litvec[v] as tag
+InstrRtnTag . Instruction ::=             "rtn" "/" "tag" Bit CastHexEight ;
+
+-- rtn/arg                      01xn aaaa aaaa             use arg[a] as tag
+InstrRtnArg . Instruction ::=             "rtn" "/" "arg" Bit CastHexEight ;
+
+-- rtn/reg                      10xn rrrr rrrr             use reg[r] as tag
+InstrRtnReg . Instruction ::=             "rtn" "/" "reg" Bit CastHexEight ;
+
+-- rtn                          11xn xxxx xxxx             use current tag
+InstrRtn . Instruction ::=                "rtn" Bit ;
+
+-- upcall rtn              0101 00xn vvvv vvvv             use litvec[v] as tag
+InstrUpcallRtn . Instruction ::=          "upcall" "rtn" Bit CastHexEight ;
+
+-- upcall resume                0100 xxxx xxxx
+InstrUpcallResume . Instruction ::=       "upcall" "resume" ;
+
+-- nxt                          0101 xxxx xxxx             invoke next strand
+InstrNxt . Instruction ::=                "nxt" ;
+
+-- jump                    0110 00nn nnnn nnnn             pc <- n
+InstrJump . Instruction ::=               "jump" CastHexTen ;
+
+-- jump on #f                   01nn nnnn nnnn             if (rslt == #f) pc <- n
+InstrJumpOnF . Instruction ::=            "jump" "on" "#f" CastHexTen ;
+
+-- jump/cut                     10nn nnnn nnnn m:8 x:8     pc <- n; cut m levels off env
+InstrJumpCut . Instruction ::=            "jump" "/" "cut" CastHexTen CastHexEight ;
+
+-- lookup to arg           0111 aaaa vvvv vvvv             arg[a] <- lookup(litvec[v])
+InstrLookupToArg . Instruction ::=        "lookup" "to" "arg" CastHexFour CastHexEight ;
+
+-- lookup to reg           1000 rrrr vvvv vvvv             reg[r] <- lookup(litvec[v])
+InstrLookupToReg . Instruction ::=        "lookup" "to" "reg" CastHexFour CastHexEight ;
+
+-- xfer lex to arg         1001 illl oooo aaaa             arg[a] <- lex[i,l,o]
+InstrXferLexToArg . Instruction ::=       "xfer" "lex" "to" "arg" Bit HexThree CastHexFour CastHexFour ;
+
+-- xfer lex to reg         1010 illl oooo rrrr             reg[r] <- lex[i,l,o]
+InstrXferLexToReg . Instruction ::=       "xfer" "lex" "to" "reg" Bit HexThree CastHexFour CastHexFour ;
+
+-- xfer global to arg      1011 0000 aaaa aaaa g:16        arg[a] <- global[g]
+InstrXferGlobalToArg . Instruction ::=     "xfer" "global" "to" "arg" CastHexEight CastHexSixteen ;
+
+-- xfer global to reg           0001 xxxx rrrr g:16        reg[r] <- global[g]
+InstrXferGlobalToReg . Instruction ::=     "xfer" "global" "to" "reg" CastHexFour CastHexSixteen ;
+
+-- xfer arg to arg              0010 dddd ssss             arg[d] <- arg[s]
+InstrXferArgToArg . Instruction ::=        "xfer" "arg" "to" "arg" CastHexFour CastHexFour ;
+
+-- xfer rslt to arg             0100 aaaa aaaa             arg[a] <- rslt
+InstrXferRsltToArg . Instruction ::=       "xfer" "rslt" "to" "arg" CastHexEight ;
+
+-- xfer arg to rslt             0101 aaaa aaaa             rslt <- arg[a]
+InstrXferArgToRslt . Instruction ::=       "xfer" "arg" "to" "rslt" CastHexEight ;
+
+-- xfer rslt to reg             0110 xxxx rrrr             reg[r] <- rslt
+InstrXferRsltToReg . Instruction ::=       "xfer" "rslt" "to" "reg" CastHexFour ;
+
+-- xfer reg to rslt             0111 xxxx rrrr             rslt <- reg[r]
+InstrXferRegToRslt . Instruction ::=       "xfer" "reg" "to" "rslt" CastHexFour ;
+
+-- xfer rslt to dest            1000 vvvv vvvv             *litvec[v] <- rslt
+InstrXferRsltToDest . Instruction ::=      "xfer" "rslt" "to" "dest" CastHexEight ;
+
+-- xfer src to rslt             1001 vvvv vvvv             rslt <- *litvec[v]
+InstrXferSrcToDest . Instruction ::=       "xfer" "src" "to" "rslt" CastHexEight ;
+
+-- xfer ind lit to arg     1011 1010 aaaa vvvv             arg[a] <- litvec[v]
+InstrXferIndLitToArg . Instruction ::=     "xfer" "ind" "lit" "to" "arg" CastHexFour CastHexFour ;
+
+-- xfer ind lit to reg          1011 rrrr vvvv             reg[r] <- litvec[v]
+InstrXferIndLitToReg . Instruction ::=     "xfer" "ind" "lit" "to" "reg" CastHexFour CastHexFour ;
+
+-- xfer ind lit to rslt         1100 vvvv vvvv             rslt <- litvec[v]
+InstrXferIndLitToRslt . Instruction ::=    "xfer" "ind" "lit" "to" "rslt" CastHexEight ;
+
+-- xfer imm lit to arg     1100 0rrr aaaa aaaa             arg[a] <- fixnum(r)
+InstrXferImmLitToArg . Instruction ::=     "xfer" "imm" "lit" "to" "arg" HexThree CastHexEight ;
+
+--                              1000 aaaa aaaa             arg[a] <- #t
+InstrXferTrueToArg . Instruction ::=       "xfer" "#t" "to" "arg" CastHexEight ;
+
+--                              1001 aaaa aaaa             arg[a] <- #f
+InstrXferFalseToArg . Instruction ::=      "xfer" "#f" "to" "arg" CastHexEight ;
+
+--                              1010 aaaa aaaa             arg[a] <- nil
+InstrXferNilToArg . Instruction ::=        "xfer" "nil" "to" "arg" CastHexEight ;
+
+--                              1011 aaaa aaaa             arg[a] <- #niv
+InstrXferNivToArg . Instruction ::=        "xfer" "#niv" "to" "arg" CastHexEight ;
+
+-- xfer imm lit to reg     1101 0rrr xxxx rrrr             reg[r] <- fixnum(r)
+InstrXferImmLitToReg . Instruction ::=     "xfer" "imm" "lit" "to" "reg" HexThree CastHexFour;
+
+--                              1000 xxxx rrrr             reg[r] <- #t
+InstrXferTrueToReg . Instruction ::=       "xfer" "#t" "to" "reg" CastHexFour;
+
+--                              1001 xxxx rrrr             reg[r] <- #f
+InstrXferFalseToReg . Instruction ::=      "xfer" "#f" "to" "reg" CastHexFour;
+
+--                              1010 xxxx rrrr             reg[r] <- nil
+InstrXferNilToReg . Instruction ::=        "xfer" "nil" "to" "reg" CastHexFour;
+
+--                              1011 xxxx rrrr             reg[r] <- #niv
+InstrXferNivToReg . Instruction ::=        "xfer" "#niv" "to" "reg" CastHexFour;
