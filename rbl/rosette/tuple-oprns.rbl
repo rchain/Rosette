@@ -38,7 +38,7 @@
 		     (seq
 		      (set! hd (head tl))
 		      (set! tl (tail tl))
-		      (if (null? hd)
+		      (if (and (null? hd) (null? tl))
 			  acc
 			  (p hd acc iter))))]]
       (p hd unit iter))))
