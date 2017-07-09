@@ -77,21 +77,23 @@
   (seq (lock (self))
        (next! [[read-expr] [read-line]])))
 
-(defRMethod Istream (read-expr requesting-ctxt)
+(defRMethod Istream (read-expr ctxt-tuple)
+  (let [[[requesting-ctxt _code] ctxt-tuple]]
   (let [[expr (istream-read (self))]]
     (if (same? expr incomplete-io)
 	(next! [[resume-io]] 'client requesting-ctxt)
 	(block
 	  (send next! [[read-expr][read-line]])
-	  (ctxt-rtn requesting-ctxt expr)))))
+	  (ctxt-rtn requesting-ctxt expr))))))
 
-(defRMethod Istream (read-line requesting-ctxt)
+(defRMethod Istream (read-line ctxt-tuple)
+  (let [[[requesting-ctxt _code] ctxt-tuple]]
   (let [[expr (istream-readline (self))]]
     (if (same? expr incomplete-io)
 	(next! [[resume-io]] 'client requesting-ctxt)
 	(block
 	  (send next! [[read-expr][read-line]])
-	  (ctxt-rtn requesting-ctxt expr)))))
+	  (ctxt-rtn requesting-ctxt expr))))))
 
 (defMethod Istream (resume-io & args)
   (let [[expr (istream-resume-io (self))]]
