@@ -232,9 +232,10 @@
 
 ;;; rosette level error signalled by rosette level code
 
-(defRMethod Top (RuntimeError ctxt & msg)
+(defRMethod Top (RuntimeError ctxt-tuple & msg)
+  (let [[[ctxt _code] ctxt-tuple]]
   (handle-dispatch
    ctxt
    (lookup 'self! ctxt)
-   ["*** " & (tuple-concat msg [" in: " (self) nl])]))
+   ["*** " & (tuple-concat msg [" in: " (self) nl])])))
 

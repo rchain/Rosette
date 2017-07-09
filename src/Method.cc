@@ -144,9 +144,14 @@ ReflectiveMthd::dispatch (Ctxt*)
 Ob*
 ReflectiveMthd::invoke (Ctxt* ctxt)
 {
-    PROTECT_THIS(ReflectiveMthd); PROTECT(ctxt);
+    PROTECT_THIS(ReflectiveMthd);
+    PROTECT(ctxt);
+    Tuple* ctxtTuple = Tuple::create (2, NIV);
+    ctxtTuple->elem(0) = ctxt;
+    ctxtTuple->elem(1) = ctxt->code;
+    PROTECT(ctxtTuple);
     Tuple* newArgvec = ctxt->argvec->makeSlice(0, ctxt->nargs);
-    newArgvec->elem(0) = ctxt;
+    newArgvec->elem(0) = ctxtTuple;
     PROTECT(newArgvec);
     Ob* surrogate = BASE(ctxt->arg(0))->dup();
     PROTECT(surrogate);
