@@ -1,0 +1,190 @@
+Prog.                 Program ::= [Exp] ;
+
+EComm.                Exp ::= "(" Exp Clause ")" ;
+ECommSend.            Exp ::= "(" "send" Exp Clause ")" ;
+EToken.               Exp ::= TokenLit ;
+EString.              Exp ::= StringLit ;
+ELiteral.             Exp ::= LiteralExp ;
+EConstant.            Exp ::= Constant ;
+EProcedure.           Exp ::= Procedure ;
+EBlock.               Exp ::= Block ;
+EConditional.         Exp ::= Conditional ;
+EIteration.           Exp ::= Iteration ;
+EBind.                Exp ::= Bind ;
+ETuple.               Exp ::= Tuple ;
+EKeyword.             Exp ::= Keyword ;
+EIdent.               Exp ::= Identifier ;
+
+terminator Exp "" ;
+
+ClauseL.              Clause ::= [Exp] ;
+ClauseRest.           Clause ::= [Exp] "&" Exp ;
+
+-- DefExpanderBody.      DefExpanderBody ::= Exp ;
+-- DefExpander.          Def ::= "(" "defExpander" "(" Id Exp ")" DefExpanderBody ")" ;
+
+-- DefOprn.              Def ::= "(" "defOprn" Id ")" ;
+-- DefOprnE.             Def ::= "(" "defOprn" Id Exp "'" ")";
+-- DefOprnSboE.          Def ::= "(" "defOprn" Id "&" "(" "sbo&" Exp ")" Exp "'" ")";
+-- DefOprnP.             Def ::= "(" "defOprn" "(" Id Exp ")" Body "pure&" ")";
+-- DefOprnPSbo.          Def ::= "(" "defOprn" "(" Id Exp ")" Body "&" "(" "sbo&" Exp ")" "pure&" ")";
+
+-- DefActor.             Def ::= "(" "defActor" Id [Form] ")" ;
+-- DefActorExtends.      Def ::= "(" "defActor" Id [Form] "(" "extends&" Exp ")" ")" ; -- TODO: Empty extends& allowed in implementation
+-- DefActorSlot.         Def ::= "(" "defActor" Id [Form] "(" "slots&" [Slot] ")" ")" ;
+-- DefActorExtendsSlot.  Def ::= "(" "defActor" Id "(" "extends&" Exp ")" "(" "slots&" [Slot] ")" [Form] ")" ;
+--
+-- DefSlots.             Def ::= "(" "defSlots" Exp [Form] ")" ;
+-- DefSlotsSbo.          Def ::= "(" "defSlots" Exp "(" "sbo&" Exp "'" ")" [Form] ")" ;
+--
+-- DefPure.              Def ::= "(" "defPure" Exp Oprn Body ")" ;
+-- DefPurePtrn.          Def ::= "(" "defPure" Exp "(" Oprn Pattern ")" Body ")" ;
+--
+-- DefLocal.             Def ::= "(" "defLocal" Exp "(" Id Pattern ")" Body ")" ;
+
+-- DefSync.              Def ::= "(" "defSync" Id Exp "'" ")" ;
+-- DefSyncSbo.           Def ::= "(" "defSync" Id "&" "(" "sbo&" Exp ")" Exp "'" ")" ;
+-- DefSyncSboNoId.       Def ::= "(" "defSync" "(" "sbo&" Exp ")" Exp Exp ")" ; -- undocumented
+-- DefSyncP.             Def ::= "(" "defSync" "(" Id Exp ")" Body "pure&" ")" ;
+-- DefSyncPSbo.          Def ::= "(" "defSync" "(" Id Exp ")" Body "&" "(" "sbo&" Exp ")" "pure&" ")" ;
+--
+-- DefProc.              Def ::= "(" "defProc" "(" Id Pattern ")" Body ")" ;
+-- DefProcSbo.           Def ::= "(" "defProc" "(" Id Pattern ")" "(" "sbo&" Exp ")" Body ")" ;
+-- DefProc2.             Def ::= "(" "defProc" Exp Body ")" ; -- undefined
+
+-- Forms
+-- FMethod.              Form ::= "(" "method" Exp Body ")" ; -- undocumented
+-- FMethodP.             Form ::= "(" "method" "(" Oprn Pattern ")" Body ")" ;
+-- FPure.                Form ::= "(" "pure" Exp Body ")" ; -- undocumented
+-- FPureP.               Form ::= "(" "pure" "(" Oprn Pattern ")" Body ")" ;
+-- FLocal.               Form ::= "(" "local" "(" Id Pattern ")" Body ")" ;
+-- FProc.                Form ::= "(" "proc" "(" Id Pattern ")" Body ")" ;
+-- FValue.               Form ::= "(" "value" Id Exp ")" ;
+-- FSlot.                Form ::= "(" "slot" Exp Exp "'" ")" ;
+--
+-- terminator Form "" ;
+
+-- Tuple
+TBasic.               Tuple ::= "[" [Exp] "]" ;
+TNested.              Tuple ::= "[" [Exp] "&" Exp "]" ;
+
+-- Procedures
+PProc.                Procedure ::= "(" "proc" Pattern Body ")" ;
+
+-- Blocks
+BBlock.               Block ::= "(" "block" Exp [Exp] ")" ;
+BSeq.                 Block ::= "(" "seq" Exp [Exp] ")" ;
+
+-- Conditionals
+CConsequent.          CondConsequent ::= Exp ;
+CAlternate.           CondAlternate ::= Exp ;
+CCase.                CondCase ::= "(" Exp Exp ")" ;
+CElse.                CondElse ::= "(" "else" Exp ")" ;
+CIf.                  Conditional ::= "(" "if" Test CondConsequent ")" ;
+CIfElse.              Conditional ::= "(" "if" Test CondConsequent CondAlternate ")" ;
+CCond.                Conditional ::= "(" "cond" CondCase [ CondCase ] ")" ;
+CCondElse.            Conditional ::= "(" "cond" CondCase [ CondCase ] CondElse ")" ;
+
+terminator CondCase "" ;
+
+-- Binding constructs
+BindHeadId.           BindHead ::= "[" Id Exp "]" ;
+BindHeadPtrn.         BindHead ::= "[" Pattern Exp "]" ;
+BindHeadIdOnlyL.      BindHeadIdOnly ::= "[" Id Exp "]" ;
+BindBodyL.            BindBody ::= Exp [Exp] ;
+CLet.                 Bind ::= "(" "let" "[" [BindHead] "]" BindBody ")" ;
+CLetStar.             Bind ::= "(" "let*" "[" [BindHead] "]" BindBody ")" ;
+CLetRec.              Bind ::= "(" "letrec" "[" [BindHeadIdOnly] "]" BindBody ")" ;
+
+terminator BindHead "" ;
+terminator BindHeadIdOnly "" ;
+
+-- Iteration
+IterBindL.            IterBind ::= "[" Id Exp "]" ;
+IterBindExp.          IterBind ::= "[" [Exp] "]" ; -- not documented
+IterBodyL.            IterBody ::= [Exp] ;
+InitL.                Init ::= Exp ;
+StepL.                Step ::= Exp ;
+DoStepL.              DoStep ::= "[" Id Init Step "]" ;
+DoCondL.              DoCond ::= "(" Test Exp ")" ;
+DoBodyL.              DoBody ::= Exp ;
+DoBodyEmpy.           DoBody ::= ;
+EIter.                Iteration ::= "(" "iterate" Id "[" [IterBind] "]" IterBody ")" ;
+EDo.                  Iteration ::= "(" "do" "[" [DoStep] "]" "[" [DoCond] "]" DoBody ")" ;
+EDoStar.              Iteration ::= "(" "do*" "[" [DoStep] "]" "[" [DoCond] "]" DoBody ")" ;
+
+terminator IterBind "" ;
+terminator DoStep "" ;
+terminator DoCond "" ;
+
+-- String
+-- TODO: Can't parse newlines
+StringLitL.           StringLit ::= RString ;
+
+-- Constants
+CTrue.                CBool ::= "#t" ;
+CFalse.               CBool ::= "#f" ;
+CBoolean.             Constant ::= CBool ;
+CFixnum.              Constant ::= Integer ;
+CFloat.               Constant ::= Double ;
+CChar.                Constant ::= RChar ;
+CCharEscaped.         Constant ::= REscapeChar ;
+CAbsent.              Constant ::= "#absent" ;
+CEof.                 Constant ::= "#eof" ;
+CNiv.                 Constant ::= "#niv" ;
+
+-- Keywords
+EAdd.                 Keyword ::= "+" ;
+EMult.                Keyword ::= "*" ;
+ESboAnd.              Keyword ::= "sbo&" ;
+EMboxNamed.           Keyword ::= "mbox:" ;
+EParentNamed.         Keyword ::= "parent:" ;
+EMetaNamed.           Keyword ::= "meta:" ;
+EPromptNamed.         Keyword ::= "prompt:" ; -- undocumented
+EExitRepl.            Keyword ::= ":exit-repl" ; -- undocumented
+
+-- Patterns
+PtrnP.                Pattern ::= "[" [Exp] "]" ;
+PtrnPA.               Pattern ::= "[" [Exp] "&" Exp "]" ;
+
+terminator Pattern "" ;
+
+-- Identifier
+IPrototype.           Identifier ::= IdentPrototype ;
+ISyncOp.              Identifier ::= IdentSyncOp ;
+
+-- Prototype Identifier
+-- TODO: Add others (page 10)
+IString.              IdentPrototype ::= "String" ;
+
+-- Sync-Operation Identifier
+-- TODO: Add others (e.g. page 12)
+IKind.                IdentSyncOp ::= "kind" ;
+
+-- Helpers
+BodyL.                Body ::= Exp ;
+OprnL.                Oprn ::= Exp ;
+SlotL.                Slot ::= Id Exp ;
+TestL.                Test ::= Exp ;
+
+terminator Slot "" ;
+
+-- Id
+IdL.                  Id ::= TokenLit ;
+
+terminator Id "" ;
+
+token TokenLit ( (letter | ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '&' | '.' | '@' | ':' | ',' | '`') ) (letter | digit | ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '\'' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) )*) ; -- undocumented
+
+token RString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+
+token RChar ( {"#\\"} char ) ;
+
+token REscapeChar ( {"#\\\\"} ('n' | 'r' | 't' | 'f' | 'x' | '\\') ) ;
+
+token LiteralExp ( '\'' (letter | {"\\ "} | digit | ('+' | '@' | '.' | '?' | '!' | '$' | '^' | ':' | '=' | '^' | '[' | ']' | '(' | '_' | '&' | ',' | '#'))* ) ;
+
+-- Comments
+comment ";" ;
+comment ";;" ;
+comment ";;;" ;
