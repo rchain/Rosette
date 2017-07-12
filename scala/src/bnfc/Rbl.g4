@@ -78,7 +78,9 @@ constant : rboolean
          | rescape
          | rabsent
          | reof
-         | rniv ;
+         | rniv
+         | readerror
+         | incompleteio ;
 
 rboolean : '#t' | '#f' ;
 
@@ -95,6 +97,10 @@ rabsent : '#absent' ;
 reof : '#eof' ;
 
 rniv : '#niv' ;
+
+readerror : '#read-error' ; // undocumented
+
+incompleteio: '#incomplete-io' ; // undocumented
 
 /*------------------------------------------------------------------
  * LEXER RULES (order matters)
