@@ -17,10 +17,6 @@ expr : request
      | letstar
      | letrec
      | ifexpr
-     | cond
-     | iterate
-     | doexpr
-     | dostar
      | constant ;
 
 /* Request */
@@ -68,21 +64,10 @@ letrec : OP 'letrec' '[' ('[' id expr ']')* ']' expr+ CP ;
 pattern : '[' expr* ']'
         | '[' expr* '&' expr ']' ;
 
-/* Conditional */
+/* If */
 
 ifexpr : OP 'if' expr expr CP
    | OP 'if' expr expr expr CP ;
-
-cond : OP 'cond' ( '(' expr expr ')' )+ CP
-     | OP 'cond' ( '(' expr expr ')' )+ '(' 'else' expr ')' CP ;
-
-/* Iteration */
-
-iterate : OP 'iterate' id '[' ( '[' id expr ']' | '[' expr* ']' )* ']' expr* CP ;
-
-doexpr : OP 'do' '[' ('[' id expr expr ']')* ']' '[' ('(' expr expr ')')* ']' expr? CP ;
-
-dostar : OP 'do*' '[' ('[' id expr expr ']')* ']' '[' ('(' expr expr ')')* ']' expr? CP ;
 
 /* Constant */
 
