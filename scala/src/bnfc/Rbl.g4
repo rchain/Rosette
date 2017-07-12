@@ -33,7 +33,7 @@ clause : expr*
 
 /* Literal Expression */
 
-literal : LITERAL ('(' | ')' )* ;
+literal : '\'' expr ;
 
 /* Token */
 
@@ -121,8 +121,6 @@ CP : ')';
 FLOAT : DIGIT+ '.' DIGIT* | DIGIT* '.' DIGIT+ ;
 
 FIXNUM : DIGIT+ ;
-
-LITERAL : '\'' [()]* (LETTER | DIGIT | WHITESPACE)+ ;
 
 CHAR : '#\\' . ;
 
