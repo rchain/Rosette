@@ -74,7 +74,7 @@ ifexpr : OP 'if' expr expr CP
    | OP 'if' expr expr expr CP ;
 
 cond : OP 'cond' ( '(' expr expr ')' )+ CP
-     | OP 'cond' ( '(' expr expr ')' )+ 'else' expr CP ;
+     | OP 'cond' ( '(' expr expr ')' )+ '(' 'else' expr ')' CP ;
 
 /* Iteration */
 
