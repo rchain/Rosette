@@ -8,10 +8,8 @@ program : expr* EOF ;
 
 /* Order matters */
 expr : method
-     | request
-     | send
      | quote
-     | token
+     | label
      | string
      | tuple
      | id
@@ -20,21 +18,22 @@ expr : method
      | let
      | letrec
      | ifexpr
-     | method
      | proc
      | free
      | gotoexpr
      | set
-     | label
-     | constant ;
+     | constant
+     | token
+     | request
+     | send ;
 
 /* Request */
 
-request : OP (expr | 'method') clause CP ;
+request : OP expr clause CP ;
 
-send : OP 'send' (expr | 'method') clause CP ;
+send : OP 'send' expr clause CP ;
 
-clause : expr*
+clause : (expr)*
        | expr* '&' expr ;
 
 /* Quote */
@@ -43,7 +42,7 @@ quote : '\'' expr ;
 
 /* Token */
 
-token : TOKEN ;
+token : (TOKEN | 'label' | 'method' | 'proc' | 'block' | 'seq' | 'let' | 'letrec' | 'if' | 'free' | 'goto' | 'set!' ) ;
 
 /* String */
 
@@ -95,6 +94,8 @@ proc : OP 'proc' pattern expr CP ;
 /* ??? */
 
 /* Null expression */
+
+/* ??? */
 
 /* Miscellaneous forms */
 
