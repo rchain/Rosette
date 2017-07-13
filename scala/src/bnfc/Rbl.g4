@@ -8,11 +8,11 @@ program : expr* EOF ;
 
 /* Order matters */
 expr : method
+     | rmethod
      | quote
      | label
      | string
      | tuple
-     | id
      | block
      | seq
      | let
@@ -24,6 +24,7 @@ expr : method
      | set
      | constant
      | token
+     | id
      | request
      | send ;
 
@@ -42,7 +43,7 @@ quote : '\'' expr ;
 
 /* Token */
 
-token : (TOKEN | 'label' | 'method' | 'proc' | 'block' | 'seq' | 'let' | 'letrec' | 'if' | 'free' | 'goto' | 'set!' ) ;
+token : (TOKEN | 'label' | 'method' | 'rmethod' | 'proc' | 'block' | 'seq' | 'let' | 'letrec' | 'if' | 'free' | 'goto' | 'set!' ) ;
 
 /* String */
 
@@ -85,13 +86,13 @@ ifexpr : OP 'if' expr expr CP
 
 method : OP 'method' pattern expr+ CP ;
 
+/* Reflective method */
+
+rmethod : OP 'rmethod' pattern expr+ CP ;
+
 /* Proc */
 
 proc : OP 'proc' pattern expr CP ;
-
-/* Reflective method */
-
-/* ??? */
 
 /* Null expression */
 
