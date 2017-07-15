@@ -1,3 +1,14 @@
+class Ctxt {
+    var argvec : Tuple;
+    var ctxt : Option[Ctxt] = None;
+    var nargs : Int;
+    var outstanding : Int;
+}
+
+object Ctxt {
+    def create(a, ctxt : Ctxt) : Ctxt = {}
+}
+
 class Instr {
     var opcode;
     var args : List[Int]; // Covers 16-bit args; may want 64-bit ones eventually
@@ -7,18 +18,25 @@ class PC {
     def fetch() : Instr = {}
 }
 
-class Ctxt {
-    var ctxt : Option[Ctxt] = None;
-    var nargs : Int;
-    def create(a, ctxt : Ctxt) : Ctxt = {}
+object PC {
+    def fromInt(i : Int) : PC = {}    
+}
+
+class Tuple {
+    
+}
+
+object Tuple {
+    def create(a, b) : Tuple = {}
 }
 
 class VirtualMachine {
-    var sigvec : Int = 0;
-    var debuggingLevel : Int = 0;
-    var pc : PC;
     var bytecodes : List[Int];
     var ctxt : Ctxt;
+    var debuggingLevel : Int = 0;
+    var pc : PC;
+    var sigvec : Int = 0;
+    var strandPool : scala.collection.mutable.Stack[Ctxt];
 
     def execute() : Unit = {
         var instr : Instr;
@@ -56,7 +74,22 @@ class VirtualMachine {
                 case opPushAlloc => 
                     ctxt = Ctxt.create(Tuple.create(instr.args[0], NIV), ctxt);
 
-                case 
+                case opExtend => {
+                    
+                }
+                
+                case opOutstanding => {
+                    ctxt.pc = PC.fromInt(instr.args[0]);
+                    ctxt.outstanding = instr.args[1];
+                }
+                
+                case opFork => {
+                    var newCtxt = ctxt.clone();
+                    newCtxt.pc = PC.fromInt(instr.args[0]);
+                    strandPool.push(newCtxt);
+                }
+                
+                
             }
         } while (!done);
     }
