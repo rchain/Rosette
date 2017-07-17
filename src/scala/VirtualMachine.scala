@@ -10,8 +10,13 @@ object Ctxt {
 }
 
 class Instr {
-    var opcode;
+    var opcode : Op;
     var args : List[Int]; // Covers 16-bit args; may want 64-bit ones eventually
+}
+
+class Location {}
+object Location {
+    def ArgReg(a : Int) : Location = {}
 }
 
 abstract class Op;
@@ -92,9 +97,15 @@ class VirtualMachine {
     def execute() : Unit = {
         var instr : Instr;
         var loc : Location;
-        var temp : Ob = INVALID;
-        var result : Ob = INVALID;
-        var done : Boolean = false;
+        var temp : Option[Ob] = None;
+        var result : Option[Ob] = None;
+
+        var nextOpFlag : Boolean = true;
+        var doXmitFlag : Boolean = false;
+        var doRtnFlag : Boolean = false;
+        var doNextThread : Boolean = false;
+        var vmErrorFlag : Boolean = false;
+        var exitFlag : Boolean = false;
 
         do {
             if (0 != sigvec) {
@@ -139,31 +150,7 @@ class VirtualMachine {
                     newCtxt.pc = PC.fromInt(p);
                     strandPool.push(newCtxt);
                 }
-                
-                case OpXmitTag(n : Boolean, u : Boolean, m : Int, v : Int) => {
-                }
-                case OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) => {
-                }
-                case OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) => {
-                }
-                case OpXmit(u : Boolean, n : Boolean, m : Int) => {
-                }
-                case OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) => {
-                }
-                case OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) => {
-                }
-                case OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) => {
-                }
-                case OpSend(u : Boolean, n : Boolean, m : Int) => {
-                }
-                case OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) => {
-                }
-                case OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) => {
-                }
-                case OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) => {
-                }
-                case OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) => {
-                }
+                                
                 case OpRtnTag(n : Boolean, v : Int) => {
                 }
                 case OpRtnArg(n : Boolean, a : Int) => {
@@ -175,8 +162,6 @@ class VirtualMachine {
                 case OpUpcallRtn(n : Boolean, v : Int) => {
                 }
                 case OpResume() => {
-                }
-                case OpNxt() => {
                 }
                 case OpJmp(n : Boolean) => {
                 }
@@ -220,8 +205,65 @@ class VirtualMachine {
                 }
                 case OpUnknown() => {
                 }
+                case _ => {
+                    var doXmitFlag = true;
+                    var doNextThreadFlag = false;
+                    instr.opcode match {
+                        // unwind if u;
+                        // invoke trgt with m args and tag = litvec[v]
+                        // nxt if n;
+                        case OpXmitTag(u : Boolean, n : Boolean, m : Int, v : Int) => {
+                            ctxt.nargs = m;
+                            ctxt.tag.atom = code.lit(v);
+                        }
+
+                        case OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                            ctxt.nargs = m;
+                            ctxt.tag = ArgReg(a);
+                        }
+
+                        case OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                            ctxt.nargs = m;
+                            ctxt.tag = CtxtReg(r);
+                        }
+
+                        case OpXmit(u : Boolean, n : Boolean, m : Int) => {
+                        }
+                        case OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) => {
+                        }
+                        case OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                        }
+                        case OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                        }
+                        case OpSend(u : Boolean, n : Boolean, m : Int) => {
+                        }
+                        case OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) => {
+                        }
+                        case OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) => {
+                        }
+                        case OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) => {
+                        }
+                        case OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) => {
+                        }
+                        case OpNxt() {
+                            doNextThreadFlag = true;
+                            doXmitFlag = false;
+                        }
+                    }
+                    // doXmit stuff
+                    // maybe set doNextThreadFlag
+                    
+                    if (doNextThreadFlag) {
+                        if (getNextStrand()) {
+                            nextOpFlag = false;
+                        }
+                    }
+                }
                 
             }
-        } while (!done);
+        } while (nextOpFlag);
+        if (vmErrorFlag) {
+            
+        }
     }
 }
