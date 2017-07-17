@@ -140,6 +140,86 @@ class VirtualMachine {
                     strandPool.push(newCtxt);
                 }
                 
+                case OpXmitTag(n : Boolean, u : Boolean, m : Int, v : Int) => {
+                }
+                case OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                }
+                case OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                }
+                case OpXmit(u : Boolean, n : Boolean, m : Int) => {
+                }
+                case OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) => {
+                }
+                case OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                }
+                case OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                }
+                case OpSend(u : Boolean, n : Boolean, m : Int) => {
+                }
+                case OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) => {
+                }
+                case OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) => {
+                }
+                case OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) => {
+                }
+                case OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) => {
+                }
+                case OpRtnTag(n : Boolean, v : Int) => {
+                }
+                case OpRtnArg(n : Boolean, a : Int) => {
+                }
+                case OpRtnReg(n : Boolean, r : Int) => {
+                }
+                case OpRtn(n : Boolean) => {
+                }
+                case OpUpcallRtn(n : Boolean, v : Int) => {
+                }
+                case OpResume() => {
+                }
+                case OpNxt() => {
+                }
+                case OpJmp(n : Boolean) => {
+                }
+                case OpJmpFalse(n : Boolean) => {
+                }
+                case OpJmpCut(n : Boolean, m : Int) => {
+                }
+                case OpLookupToArg(a : Int, v : Int) => {
+                }
+                case OpLookupToReg(r : Int, v : Int) => {
+                }
+                case OpXferLexToArg(i : Boolean, l : Int, o : Int, a : Int) => {
+                }
+                case OpXferLexToReg(i : Boolean, l : Int, o : Int, r : Int) => {
+                }
+                case OpXferGlobalToArg(a : Int, g : Int) => {
+                }
+                case OpXferGlobalToReg(r : Int, g : Int) => {
+                }
+                case OpXferArgToArg(d : Int, s : Int) => {
+                }
+                case OpXferRsltToArg(a : Int) => {
+                }
+                case OpXferArgToRslt(a : Int) => {
+                }
+                case OpXferRsltToReg(r : Int) => {
+                }
+                case OpXferRegToRslt(r : Int) => {
+                }
+                case OpXferSrcToRslt(v : Int) => {
+                }
+                case OpIndLitToArg(a : Int, v : Int) => {
+                }
+                case OpIndLitToReg(r : Int, v : Int) => {
+                }
+                case OpIndLitToRslt(v : Int) => {
+                }
+                case OpImmediateLitToArg(fixnum: Boolean, v : Int, a : Int) => {
+                }
+                case OpImmediateLitToReg(fixnum: Boolean, v : Int, r : Int) => {
+                }
+                case OpUnknown() => {
+                }
                 
             }
         } while (!done);
