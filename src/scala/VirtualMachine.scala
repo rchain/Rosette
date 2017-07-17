@@ -14,6 +14,57 @@ class Instr {
     var args : List[Int]; // Covers 16-bit args; may want 64-bit ones eventually
 }
 
+abstract class Op;
+case class OpHalt() extends Op;
+case class OpPush() extends Op;
+case class OpPop() extends Op;
+case class OpNargs(n : Int) extends Op;
+case class OpAlloc(n : Int) extends Op;
+case class OpPushAlloc(n : Int) extends Op;
+case class OpExtend(v : Int) extends Op;
+case class OpOutstanding(p : Int, n : Int) extends Op;
+case class OpFork(p : Int) extends Op;
+case class OpXmitTag(n : Boolean, u : Boolean, m : Int, v : Int) extends Op;
+case class OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) extends Op;
+case class OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) extends Op;
+case class OpXmit(u : Boolean, n : Boolean, m : Int) extends Op;
+case class OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) extends Op;
+case class OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) extends Op;
+case class OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) extends Op;
+case class OpSend(u : Boolean, n : Boolean, m : Int) extends Op;
+case class OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) extends Op;
+case class OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) extends Op;
+case class OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) extends Op;
+case class OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) extends Op;
+case class OpRtnTag(n : Boolean, v : Int) extends Op;
+case class OpRtnArg(n : Boolean, a : Int) extends Op;
+case class OpRtnReg(n : Boolean, r : Int) extends Op;
+case class OpRtn(n : Boolean) extends Op;
+case class OpUpcallRtn(n : Boolean, v : Int) extends Op;
+case class OpResume() extends Op;
+case class OpNxt() extends Op;
+case class OpJmp(n : Boolean) extends Op;
+case class OpJmpFalse(n : Boolean) extends Op;
+case class OpJmpCut(n : Boolean, m : Int) extends Op;
+case class OpLookupToArg(a : Int, v : Int) extends Op;
+case class OpLookupToReg(r : Int, v : Int) extends Op;
+case class OpXferLexToArg(i : Boolean, l : Int, o : Int, a : Int) extends Op;
+case class OpXferLexToReg(i : Boolean, l : Int, o : Int, r : Int) extends Op;
+case class OpXferGlobalToArg(a : Int, g : Int) extends Op;
+case class OpXferGlobalToReg(r : Int, g : Int) extends Op;
+case class OpXferArgToArg(d : Int, s : Int) extends Op;
+case class OpXferRsltToArg(a : Int) extends Op;
+case class OpXferArgToRslt(a : Int) extends Op;
+case class OpXferRsltToReg(r : Int) extends Op;
+case class OpXferRegToRslt(r : Int) extends Op;
+case class OpXferSrcToRslt(v : Int) extends Op;
+case class OpIndLitToArg(a : Int, v : Int) extends Op;
+case class OpIndLitToReg(r : Int, v : Int) extends Op;
+case class OpIndLitToRslt(v : Int) extends Op;
+case class OpImmediateLitToArg(fixnum: Boolean, v : Int, a : Int) extends Op;
+case class OpImmediateLitToReg(fixnum: Boolean, v : Int, r : Int) extends Op;
+case class OpUnknown() extends Op;
+
 class PC {
     def fetch() : Instr = {}
 }
@@ -58,34 +109,34 @@ class VirtualMachine {
             bytecodes[instr.opcode] += 1;
 
             instr.opcode match {
-                case opHalt => {
+                case OpHalt() => {
                     warning("halting...");
                     done = true;
                 }
 
-                case opPush => ctxt = Ctxt.create(NIL, ctxt);
+                case OpPush() => ctxt = Ctxt.create(NIL, ctxt);
 
-                case opPop => ctxt = ctxt.ctxt;
+                case OpPop() => ctxt = ctxt.ctxt;
 
-                case opNargs => ctxt.nargs = instr.args[0];
+                case OpNargs(n) => ctxt.nargs = n;
 
-                case opAlloc => ctxt.argvec = Tuple.create(instr.args[0], NIV);
+                case OpAlloc(n) => ctxt.argvec = Tuple.create(n, NIV);
 
-                case opPushAlloc => 
-                    ctxt = Ctxt.create(Tuple.create(instr.args[0], NIV), ctxt);
+                case OpPushAlloc(n) => 
+                    ctxt = Ctxt.create(Tuple.create(n, NIV), ctxt);
 
-                case opExtend => {
+                case OpExtend(v) => {
                     
                 }
                 
-                case opOutstanding => {
-                    ctxt.pc = PC.fromInt(instr.args[0]);
-                    ctxt.outstanding = instr.args[1];
+                case OpOutstanding(p, n) => {
+                    ctxt.pc = PC.fromInt(p);
+                    ctxt.outstanding = n;
                 }
                 
-                case opFork => {
+                case OpFork(p) => {
                     var newCtxt = ctxt.clone();
-                    newCtxt.pc = PC.fromInt(instr.args[0]);
+                    newCtxt.pc = PC.fromInt(p);
                     strandPool.push(newCtxt);
                 }
                 
