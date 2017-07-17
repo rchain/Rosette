@@ -19,57 +19,6 @@ object Location {
     def ArgReg(a : Int) : Location = {}
 }
 
-abstract class Op;
-case class OpHalt() extends Op;
-case class OpPush() extends Op;
-case class OpPop() extends Op;
-case class OpNargs(n : Int) extends Op;
-case class OpAlloc(n : Int) extends Op;
-case class OpPushAlloc(n : Int) extends Op;
-case class OpExtend(v : Int) extends Op;
-case class OpOutstanding(p : Int, n : Int) extends Op;
-case class OpFork(p : Int) extends Op;
-case class OpXmitTag(n : Boolean, u : Boolean, m : Int, v : Int) extends Op;
-case class OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) extends Op;
-case class OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) extends Op;
-case class OpXmit(u : Boolean, n : Boolean, m : Int) extends Op;
-case class OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) extends Op;
-case class OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) extends Op;
-case class OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) extends Op;
-case class OpSend(u : Boolean, n : Boolean, m : Int) extends Op;
-case class OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) extends Op;
-case class OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) extends Op;
-case class OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) extends Op;
-case class OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) extends Op;
-case class OpRtnTag(n : Boolean, v : Int) extends Op;
-case class OpRtnArg(n : Boolean, a : Int) extends Op;
-case class OpRtnReg(n : Boolean, r : Int) extends Op;
-case class OpRtn(n : Boolean) extends Op;
-case class OpUpcallRtn(n : Boolean, v : Int) extends Op;
-case class OpResume() extends Op;
-case class OpNxt() extends Op;
-case class OpJmp(n : Boolean) extends Op;
-case class OpJmpFalse(n : Boolean) extends Op;
-case class OpJmpCut(n : Boolean, m : Int) extends Op;
-case class OpLookupToArg(a : Int, v : Int) extends Op;
-case class OpLookupToReg(r : Int, v : Int) extends Op;
-case class OpXferLexToArg(i : Boolean, l : Int, o : Int, a : Int) extends Op;
-case class OpXferLexToReg(i : Boolean, l : Int, o : Int, r : Int) extends Op;
-case class OpXferGlobalToArg(a : Int, g : Int) extends Op;
-case class OpXferGlobalToReg(r : Int, g : Int) extends Op;
-case class OpXferArgToArg(d : Int, s : Int) extends Op;
-case class OpXferRsltToArg(a : Int) extends Op;
-case class OpXferArgToRslt(a : Int) extends Op;
-case class OpXferRsltToReg(r : Int) extends Op;
-case class OpXferRegToRslt(r : Int) extends Op;
-case class OpXferSrcToRslt(v : Int) extends Op;
-case class OpIndLitToArg(a : Int, v : Int) extends Op;
-case class OpIndLitToReg(r : Int, v : Int) extends Op;
-case class OpIndLitToRslt(v : Int) extends Op;
-case class OpImmediateLitToArg(fixnum: Boolean, v : Int, a : Int) extends Op;
-case class OpImmediateLitToReg(fixnum: Boolean, v : Int, r : Int) extends Op;
-case class OpUnknown() extends Op;
-
 class PC {
     def fetch() : Instr = {}
 }
@@ -100,14 +49,14 @@ class VirtualMachine {
         var temp : Option[Ob] = None;
         var result : Option[Ob] = None;
 
-        var nextOpFlag : Boolean = true;
-        var doXmitFlag : Boolean = false;
-        var doRtnFlag : Boolean = false;
-        var doNextThread : Boolean = false;
-        var vmErrorFlag : Boolean = false;
-        var exitFlag : Boolean = false;
-
         do {
+            var nextOpFlag : Boolean = true;
+            var doXmitFlag : Boolean = false;
+            var doRtnFlag : Boolean = false;
+            var doNextThread : Boolean = false;
+            var vmErrorFlag : Boolean = false;
+            var exitFlag : Boolean = false;
+
             if (0 != sigvec) {
                 // handleSignal();
             }
@@ -150,120 +99,175 @@ class VirtualMachine {
                     newCtxt.pc = PC.fromInt(p);
                     strandPool.push(newCtxt);
                 }
-                                
+                // unwind if u;
+                // invoke trgt with m args and tag = litvec[v]
+                // nxt if n;
+                case OpXmitTag(u : Boolean, n : Boolean, m : Int, v : Int) => {
+                    ctxt.nargs = m;
+                    ctxt.tag.atom = code.lit(v);
+                    doXmitFlag = true;
+                }
+
+                case OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                    ctxt.nargs = m;
+                    ctxt.tag = ArgReg(a);
+                    doXmitFlag = true;
+                }
+
+                case OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                    ctxt.nargs = m;
+                    ctxt.tag = CtxtReg(r);
+                    doXmitFlag = true;
+                }
+
+                case OpXmit(u : Boolean, n : Boolean, m : Int) => {
+                    doXmitFlag = true;
+                }
+
+                case OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) => {
+                    doXmitFlag = true;
+                }
+
+                case OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                    doXmitFlag = true;
+                }
+
+                case OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                    doXmitFlag = true;
+                }
+
+                case OpSend(u : Boolean, n : Boolean, m : Int) => {
+                    doXmitFlag = true;
+                }
+
+                case OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) => {
+                    // may set doNextThreadFlag, vmErrorFlag
+                }
+
+                case OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) => {
+                    // may set doNextThreadFlag, vmErrorFlag
+                }
+
+                case OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) => {
+                    // may set doNextThreadFlag, vmErrorFlag
+                }
+
+                case OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) => {
+                    // may set doNextThreadFlag, vmErrorFlag
+                }
+
                 case OpRtnTag(n : Boolean, v : Int) => {
+                    doRtnFlag = true;
                 }
-                case OpRtnArg(n : Boolean, a : Int) => {
-                }
-                case OpRtnReg(n : Boolean, r : Int) => {
-                }
+
                 case OpRtn(n : Boolean) => {
+                    doRtnFlag = true;
                 }
+
+                case OpRtnArg(n : Boolean, a : Int) => {
+                    doRtnFlag = true;
+                }
+
+                case OpRtnReg(n : Boolean, r : Int) => {
+                    doRtnFlag = true;
+                }
+
                 case OpUpcallRtn(n : Boolean, v : Int) => {
+                    // may set doNextThreadFlag, vmErrorFlag
                 }
-                case OpResume() => {
+
+                case OpUpcallResume() => {
                 }
-                case OpJmp(n : Boolean) => {
+
+                case OpNxt() {
+                    doNextThreadFlag = true;
                 }
-                case OpJmpFalse(n : Boolean) => {
-                }
+
                 case OpJmpCut(n : Boolean, m : Int) => {
                 }
+
+                case OpJmp(n : Boolean) => {
+                }
+
+                case OpJmpFalse(n : Boolean) => {
+                }
+
                 case OpLookupToArg(a : Int, v : Int) => {
+                    // may set doNextThreadFlag
                 }
+
                 case OpLookupToReg(r : Int, v : Int) => {
+                    // may set doNextThreadFlag
                 }
+
                 case OpXferLexToArg(i : Boolean, l : Int, o : Int, a : Int) => {
                 }
+
                 case OpXferLexToReg(i : Boolean, l : Int, o : Int, r : Int) => {
                 }
+
                 case OpXferGlobalToArg(a : Int, g : Int) => {
                 }
+
                 case OpXferGlobalToReg(r : Int, g : Int) => {
                 }
+
                 case OpXferArgToArg(d : Int, s : Int) => {
                 }
+
                 case OpXferRsltToArg(a : Int) => {
                 }
+
                 case OpXferArgToRslt(a : Int) => {
                 }
+
                 case OpXferRsltToReg(r : Int) => {
                 }
+
                 case OpXferRegToRslt(r : Int) => {
                 }
+
+                case OpXferRsltToDest(v : Int) => {
+                    // may set vmErrorFlag
+                }
+
                 case OpXferSrcToRslt(v : Int) => {
                 }
+
                 case OpIndLitToArg(a : Int, v : Int) => {
                 }
+
                 case OpIndLitToReg(r : Int, v : Int) => {
                 }
+
                 case OpIndLitToRslt(v : Int) => {
                 }
+
                 case OpImmediateLitToArg(fixnum: Boolean, v : Int, a : Int) => {
                 }
+
                 case OpImmediateLitToReg(fixnum: Boolean, v : Int, r : Int) => {
                 }
+
                 case OpUnknown() => {
+                    doNextThreadFlag = true;
                 }
-                case _ => {
-                    var doXmitFlag = true;
-                    var doNextThreadFlag = false;
-                    instr.opcode match {
-                        // unwind if u;
-                        // invoke trgt with m args and tag = litvec[v]
-                        // nxt if n;
-                        case OpXmitTag(u : Boolean, n : Boolean, m : Int, v : Int) => {
-                            ctxt.nargs = m;
-                            ctxt.tag.atom = code.lit(v);
-                        }
-
-                        case OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) => {
-                            ctxt.nargs = m;
-                            ctxt.tag = ArgReg(a);
-                        }
-
-                        case OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) => {
-                            ctxt.nargs = m;
-                            ctxt.tag = CtxtReg(r);
-                        }
-
-                        case OpXmit(u : Boolean, n : Boolean, m : Int) => {
-                        }
-                        case OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) => {
-                        }
-                        case OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) => {
-                        }
-                        case OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) => {
-                        }
-                        case OpSend(u : Boolean, n : Boolean, m : Int) => {
-                        }
-                        case OpApplyPrimTag(u : Boolean, n : Boolean, m : Int, k : Int, v : Int) => {
-                        }
-                        case OpApplyPrimArg(u : Boolean, n : Boolean, m : Int, k : Int, a : Int) => {
-                        }
-                        case OpApplyPrimReg(u : Boolean, n : Boolean, m : Int, k : Int, r : Int) => {
-                        }
-                        case OpApplyCmd(u : Boolean, n : Boolean, m : Int, k : Int) => {
-                        }
-                        case OpNxt() {
-                            doNextThreadFlag = true;
-                            doXmitFlag = false;
-                        }
-                    }
-                    // doXmit stuff
-                    // maybe set doNextThreadFlag
-                    
-                    if (doNextThreadFlag) {
-                        if (getNextStrand()) {
-                            nextOpFlag = false;
-                        }
-                    }
+            }
+            if (doXmitFlag) {
+                // may set doNextThreadFlag
+            }
+            if (doRtnFlag) {
+                // may set doNextThreadFlag, vmErrorFlag
+            }
+            if (vmErrorFlag) {
+                handleVirtualMachineError();
+                doNextThreadFlag = true;
+            }
+            if (doNextThreadFlag) {
+                if (getNextStrand()) {
+                    nextOpFlag = false;
                 }
-                
             }
         } while (nextOpFlag);
-        if (vmErrorFlag) {
-            
-        }
     }
 }
