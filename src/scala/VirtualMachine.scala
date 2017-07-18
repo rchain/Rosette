@@ -3,10 +3,14 @@ class Ctxt {
     var ctxt : Option[Ctxt] = None;
     var nargs : Int;
     var outstanding : Int;
+    var tag : Location;
+    var rslt;
+    
+    def ret(rslt) : Boolean = {}
 }
 
 object Ctxt {
-    def create(a, ctxt : Ctxt) : Ctxt = {}
+    def create(a, ctxt : Ctxt) : Option[Ctxt] = {}
 }
 
 class Instr {
@@ -16,7 +20,8 @@ class Instr {
 
 class Location {}
 object Location {
-    def ArgReg(a : Int) : Location = {}
+    def ArgReg(a : Int) : Option[Location] = {}
+    def CtxtReg(r : Int) : Option[Location] = {}
 }
 
 class PC {
@@ -37,7 +42,8 @@ object Tuple {
 
 class VirtualMachine {
     var bytecodes : List[Int];
-    var ctxt : Ctxt;
+    var code : Option[Code];
+    var ctxt : Option[Ctxt];
     var debuggingLevel : Int = 0;
     var pc : PC;
     var sigvec : Int = 0;
@@ -52,6 +58,7 @@ class VirtualMachine {
         do {
             var nextOpFlag : Boolean = true;
             var doXmitFlag : Boolean = false;
+            var xmitData : (Boolean, Boolean) = (false, false);
             var doRtnFlag : Boolean = false;
             var doNextThread : Boolean = false;
             var vmErrorFlag : Boolean = false;
@@ -76,11 +83,11 @@ class VirtualMachine {
 
                 case OpPush() => ctxt = Ctxt.create(NIL, ctxt);
 
-                case OpPop() => ctxt = ctxt.ctxt;
+                case OpPop() => ctxt = ctxt.get.ctxt;
 
-                case OpNargs(n) => ctxt.nargs = n;
+                case OpNargs(n) => ctxt.get.nargs = n;
 
-                case OpAlloc(n) => ctxt.argvec = Tuple.create(n, NIV);
+                case OpAlloc(n) => ctxt.get.argvec = Tuple.create(n, NIV);
 
                 case OpPushAlloc(n) => 
                     ctxt = Ctxt.create(Tuple.create(n, NIV), ctxt);
@@ -90,53 +97,67 @@ class VirtualMachine {
                 }
                 
                 case OpOutstanding(p, n) => {
-                    ctxt.pc = PC.fromInt(p);
-                    ctxt.outstanding = n;
+                    ctxt.get.pc = PC.fromInt(p);
+                    ctxt.get.outstanding = n;
                 }
                 
                 case OpFork(p) => {
-                    var newCtxt = ctxt.clone();
+                    var newCtxt = ctxt.get.clone();
                     newCtxt.pc = PC.fromInt(p);
                     strandPool.push(newCtxt);
                 }
-                // unwind if u;
-                // invoke trgt with m args and tag = litvec[v]
-                // nxt if n;
                 case OpXmitTag(u : Boolean, n : Boolean, m : Int, v : Int) => {
-                    ctxt.nargs = m;
-                    ctxt.tag.atom = code.lit(v);
+                    ctxt.get.nargs = m;
+                    ctxt.get.tag.atom = code.get.lit(v);
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpXmitArg(u : Boolean, n : Boolean, m : Int, a : Int) => {
-                    ctxt.nargs = m;
-                    ctxt.tag = ArgReg(a);
+                    ctxt.get.nargs = m;
+                    ctxt.get.tag = ArgReg(a);
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpXmitReg(u : Boolean, n : Boolean, m : Int, r : Int) => {
-                    ctxt.nargs = m;
-                    ctxt.tag = CtxtReg(r);
+                    ctxt.get.nargs = m;
+                    ctxt.get.tag = CtxtReg(r);
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpXmit(u : Boolean, n : Boolean, m : Int) => {
+                    ctxt.get.nargs = m;
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpXmitTagXtnd(u : Boolean, n : Boolean, m : Int, v : Int) => {
+                    ctxt.get.nargs = m;
+                    ctxt.get.tag.atom = code.get.lit(v);
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpXmitArgXtnd(u : Boolean, n : Boolean, m : Int, a : Int) => {
+                    ctxt.get.nargs = m;
+                    ctxt.get.tag = ArgReg(a);
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpXmitRegXtnd(u : Boolean, n : Boolean, m : Int, r : Int) => {
+                    ctxt.get.nargs = m;
+                    ctxt.get.tag = CtxtReg(r);
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
                 case OpSend(u : Boolean, n : Boolean, m : Int) => {
+                    ctxt.get.ctxt = None;
+                    ctxt.get.nargs = m;
+                    xmitData = (u, n);
                     doXmitFlag = true;
                 }
 
@@ -157,23 +178,33 @@ class VirtualMachine {
                 }
 
                 case OpRtnTag(n : Boolean, v : Int) => {
+                    doRtnData = n;
                     doRtnFlag = true;
                 }
 
                 case OpRtn(n : Boolean) => {
+                    doRtnData = n;
                     doRtnFlag = true;
                 }
 
                 case OpRtnArg(n : Boolean, a : Int) => {
+                    doRtnData = n;
                     doRtnFlag = true;
                 }
 
                 case OpRtnReg(n : Boolean, r : Int) => {
+                    doRtnData = n;
                     doRtnFlag = true;
                 }
 
                 case OpUpcallRtn(n : Boolean, v : Int) => {
-                    // may set doNextThreadFlag, vmErrorFlag
+                    val optCtxt = ctxt.get;
+                    optCtxt.tag.atom = code.get.lit(v);
+                    if (optCtxt.tag.store(optCtxt.ctxt, optCtxt.rslt)) {
+                        vmErrorFlag = true;
+                    } else if (n) {
+                        doNextThreadFlag = true;
+                    }
                 }
 
                 case OpUpcallResume() => {
@@ -257,7 +288,11 @@ class VirtualMachine {
                 // may set doNextThreadFlag
             }
             if (doRtnFlag) {
-                // may set doNextThreadFlag, vmErrorFlag
+                if (ctxt.get.ret(ctxt.get.rslt)) {
+                    vmErrorFlag = true;
+                } else if (doRtnData) {
+                    doNextThreadFlag = true;
+                }
             }
             if (vmErrorFlag) {
                 handleVirtualMachineError();
