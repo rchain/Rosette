@@ -89,7 +89,7 @@ GotoExpr.              GotoExpr ::= "(" "goto" Id ")" ;
 
 Set.                   Set ::= "(" "set!" Id Expr ")" ;
 
-Label.                 Label ::= "(" "label" Id Expr ")" ;
+Label.                 Label ::= "(" "label" Id Expr [Expr] ")" ;
 
 -- Constant
 
