@@ -40,6 +40,7 @@ RMethod.               RMethod ::= "(" "rmethod" Pattern Expr [Expr] ")" ;
 -- Quote
 
 Quote.                 Quote ::= "'" Expr ;
+EscapedQuote.          Quote ::= "'\\" Expr ;
 
 -- String
 
