@@ -6,11 +6,17 @@ class Ctxt {
     var tag : Location;
     var rslt;
     
+    def parent() : Option[Env] = {}
     def ret(rslt) : Boolean = {}
+    def scheduleStrand() : Unit = {}
 }
 
 object Ctxt {
     def create(a, ctxt : Ctxt) : Option[Ctxt] = {}
+}
+
+class Env {
+    def parent() : Option[Env] = {}
 }
 
 class Instr {
@@ -208,6 +214,7 @@ class VirtualMachine {
                 }
 
                 case OpUpcallResume() => {
+                    ctxt.get.ctxt.get.scheduleStrand();
                 }
 
                 case OpNxt() {
@@ -215,12 +222,23 @@ class VirtualMachine {
                 }
 
                 case OpJmpCut(n : Boolean, m : Int) => {
+                    var cut = m;
+                    var newEnv : Option[Env] = ctxt.get.parent();
+                    while(0 < cut) {
+                        newEnv = newEnv.get.parent();
+                        cut -= 1;
+                    }
+                    ctxt.get.env = newEnv;
                 }
 
                 case OpJmp(n : Boolean) => {
+                    pc.absolute = code.get.absolutize(n);
                 }
 
                 case OpJmpFalse(n : Boolean) => {
+                    if (ctxt.get.rslt == false) {
+                        pc.absolute = code.get.absolutize(n);
+                    }
                 }
 
                 case OpLookupToArg(a : Int, v : Int) => {
