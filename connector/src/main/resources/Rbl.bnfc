@@ -1,0 +1,146 @@
+Prog.                  Program ::= [Expr] ;
+
+EMethod.               Expr ::= Method ;
+ERMethod.              Expr ::= RMethod ;
+EQuote.                Expr ::= Quote ;
+EFree.                 Expr ::= Free ;
+EGoto.                 Expr ::= GotoExpr ;
+ELabel.                Expr ::= Label ;
+ESet.                  Expr ::= Set ;
+EString.               Expr ::= RString ;
+ETuple.                Expr ::= Tuple ;
+EBlock.                Expr ::= Block ;
+ESeq.                  Expr ::= Seq ;
+ELet.                  Expr ::= Let ;
+ELetRec.               Expr ::= LetRec ;
+EIf.                   Expr ::= IfExpr ;
+EProc.                 Expr ::= Proc ;
+EConstant.             Expr ::= Constant ;
+ERequest.              Expr ::= "(" Expr Clause ")" ;
+ESend.                 Expr ::= "(" "send" Expr Clause ")" ;
+EId.                   Expr ::= Id ;
+ELexeme.               Expr ::= Lexeme ;
+
+terminator Expr "" ;
+
+-- Message pattern
+
+Pattern.               Pattern ::= "[" [Expr] "]" ;
+PatternAnd.            Pattern ::= "[" [Expr] "&" Expr "]" ;
+
+-- Method
+
+Method.                Method ::= "(" "method" Pattern Expr [Expr] ")" ;
+
+-- Reflective method
+
+RMethod.               RMethod ::= "(" "rmethod" Pattern Expr [Expr] ")" ;
+
+-- Quote
+
+Quote.                 Quote ::= "'" Expr ;
+EscapedQuote.          Quote ::= "'\\" Expr ;
+
+-- String
+
+RString.               RString ::= StrLexer ;
+
+-- Tuple
+
+Tuple.                 Tuple ::= "[" [Expr] "]" ;
+TupleAnd.              Tuple ::= "[" [Expr] "&" Expr "]" ;
+
+-- Block
+
+Block.                 Block ::= "(" "block" Expr [Expr] ")" ;
+
+-- Seq
+
+Seq.                   Seq ::= "(" "seq" Expr [Expr] ")" ;
+
+-- Let
+
+LetHeadId.             LetHead ::= "[" Id Expr "]" ;
+LetHeadPtrn.           LetHead ::= "[" Pattern Expr "]" ;
+LetRecHead.            LetRecHead ::= "[" Id Expr "]" ;
+
+Let.                   Let ::= "(" "let" "[" [LetHead] "]" Expr [Expr] ")" ;
+
+LetRec.                LetRec ::= "(" "letrec" "[" [LetRecHead] "]" Expr [Expr] ")" ;
+
+terminator LetHead "" ;
+terminator LetRecHead "" ;
+
+-- If
+
+IfExpr.                IfExpr ::= "(" "if" Expr Expr ")" ;
+
+IfExprElse.            IfExpr ::= "(" "if" Expr Expr Expr ")" ;
+
+-- Proc
+
+Proc.                  Proc ::= "(" "proc" Pattern Expr ")" ;
+
+-- Miscellaneous forms
+
+Free.                  Free ::= "(" "free" "[" [Id] "]" Expr [Expr] ")" ;
+
+GotoExpr.              GotoExpr ::= "(" "goto" Id ")" ;
+
+Set.                   Set ::= "(" "set!" Id Expr ")" ;
+
+Label.                 Label ::= "(" "label" Id Expr [Expr] ")" ;
+
+-- Constant
+
+CTrue.                 CBool ::= "#t" ;
+CFalse.                CBool ::= "#f" ;
+CBoolean.              Constant ::= CBool ;
+CFixnum.               Constant ::= Integer ;
+CFloat.                Constant ::= Double ;
+CChar.                 Constant ::= RChar ;
+CCharEscaped.          Constant ::= REscapeChar ;
+CAbsent.               Constant ::= "#absent" ;
+CEof.                  Constant ::= "#eof" ;
+CNiv.                  Constant ::= "#niv" ;
+CReadError.            Constant ::= "#read-error" ;
+CIncompleteIo.         Constant ::= "#incomplete-io" ;
+
+-- Request
+
+EClause.               Clause ::= [Expr] ;
+EClauseAnd.            Clause ::= [Expr] "&" Expr ;
+
+-- Id
+
+Id.                    Id ::= Atom ;
+
+terminator Id "" ;
+
+-- Lexeme
+
+Lexeme.                Lexeme ::= Atom ;
+LLabel.                Lexeme ::= "label" ;
+LMethod.               Lexeme ::= "method" ;
+LRMethod.              Lexeme ::= "rmethod" ;
+LProc.                 Lexeme ::= "proc" ;
+LBlock.                Lexeme ::= "block" ;
+LSeq.                  Lexeme ::= "seq" ;
+LLet.                  Lexeme ::= "let" ;
+LLetRec.               Lexeme ::= "letrec" ;
+LIf.                   Lexeme ::= "if" ;
+LFree.                 Lexeme ::= "free" ;
+LGoto.                 Lexeme ::= "goto" ;
+LSet.                  Lexeme ::= "set!" ;
+
+-- Lexer
+
+token StrLexer ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+
+token RChar ( {"#\\"} char ) ;
+
+token REscapeChar ( {"#\\\\"} ('n' | 'r' | 't' | 'f' | 'x' | '\\') ) ;
+
+token Atom ( (letter | {"\\ "} | ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '&' | '.' | '@' | ':' | ',' | '`') ) (letter | digit | {"\\ "} | ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '\'' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) )*) ;
+
+comment ";" ;
