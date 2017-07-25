@@ -1,4 +1,4 @@
-abstract class Op;
+sealed trait Op;
 case class OpHalt() extends Op;
 case class OpPush() extends Op;
 case class OpPop() extends Op;
