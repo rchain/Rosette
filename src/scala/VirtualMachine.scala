@@ -1,3 +1,7 @@
+class Code {
+    def lit(l : Int) : Atom = {}
+}
+
 class Ctxt {
     var argvec : Tuple;
     var ctxt : Option[Ctxt] = None;
@@ -24,7 +28,9 @@ class Instr {
     var args : List[Int]; // Covers 16-bit args; may want 64-bit ones eventually
 }
 
-class Location {}
+class Location {
+    var atom : Atom;
+}
 object Location {
     def ArgReg(a : Int) : Option[Location] = {}
     def CtxtReg(r : Int) : Option[Location] = {}
@@ -65,6 +71,7 @@ class VMState {
 }
 
 trait VirtualMachine {
+
     def executeStream(
         opCodes : Stream[Op],
         state : VMState
@@ -72,8 +79,26 @@ trait VirtualMachine {
         breakable {
             for (op <- opCodes) {
                 executeDispatch(op, state);
-                // Other flag tests here
-                if (sm.exitFlag) {
+                if (state.doXmitFlag) {
+                    // may set doNextThreadFlag
+                }
+                if (state.doRtnFlag) {
+                    if (state.ctxt.get.ret(state.ctxt.get.rslt)) {
+                        state.vmErrorFlag = true;
+                    } else if (state.doRtnData) {
+                        state.doNextThreadFlag = true;
+                    }
+                }
+                if (vmErrorFlag) {
+                    handleVirtualMachineError();
+                    state.doNextThreadFlag = true;
+                }
+                if (doNextThreadFlag) {
+                    if (getNextStrand()) {
+                        state.nextOpFlag = false;
+                    }
+                }
+                if (state.exitFlag) {
                     break;
                 }
             }
@@ -418,31 +443,5 @@ trait VirtualMachine {
     execute(op : OpUnknown, state : VMState) = {
         // 
         doNextThreadFlag = true;
-    }
-    
-
-    def execute() : Unit = {
-            instr.opcode match {
-            }
-            if (doXmitFlag) {
-                // may set doNextThreadFlag
-            }
-            if (doRtnFlag) {
-                if (ctxt.get.ret(ctxt.get.rslt)) {
-                    vmErrorFlag = true;
-                } else if (doRtnData) {
-                    doNextThreadFlag = true;
-                }
-            }
-            if (vmErrorFlag) {
-                handleVirtualMachineError();
-                doNextThreadFlag = true;
-            }
-            if (doNextThreadFlag) {
-                if (getNextStrand()) {
-                    nextOpFlag = false;
-                }
-            }
-        } while (nextOpFlag);
     }
 }
