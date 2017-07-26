@@ -12,6 +12,7 @@ object Symbols {
 
   sealed trait NonterminalSym
   case object Start extends NonterminalSym
+  case object Expr extends NonterminalSym
   case object Quote extends NonterminalSym
   case object Free extends NonterminalSym
 }
