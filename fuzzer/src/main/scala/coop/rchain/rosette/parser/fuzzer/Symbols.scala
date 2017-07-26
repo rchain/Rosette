@@ -2,6 +2,7 @@ package coop.rchain.rosette.parser.fuzzer
 
 object Symbols {
   sealed trait TerminalSym
+  case class Fix(value: String) extends TerminalSym
   case object Id extends TerminalSym
   case object Fixnum extends TerminalSym
   case object String extends TerminalSym
@@ -11,7 +12,7 @@ object Symbols {
   case object Escape extends TerminalSym
 
   sealed trait NonterminalSym
-  case object Start extends NonterminalSym
+  case object Program extends NonterminalSym
   case object Expr extends NonterminalSym
   case object Quote extends NonterminalSym
   case object Free extends NonterminalSym

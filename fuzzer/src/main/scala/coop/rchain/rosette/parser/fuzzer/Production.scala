@@ -26,7 +26,7 @@ object Production {
   /*
    * Return random production for a nonterminal
    */
-  def produce(nt: Nonterminal)(
+  def produce(nt: Nonterminal, depth: Int)(
       implicit grammar: Grammar,
       seed: Long): Either[ProductionError, Seq[Terminal]] =
     try {
@@ -41,49 +41,56 @@ object Production {
     }
 
   /*
-   * Derive random production from rhs by following production rules from grammar
+   * Derive random production from RHS by following production rules from grammar
    * Will return MissingRule error if there is no production rule for a nonterminal
    */
   private def derive(alternativeRhs: AlternativeRhs,
                      maxBreadth: Int,
-                     maxDepth: Int)(
-      implicit grammar: Grammar,
-      seed: Long): Either[ProductionError, Rhs] = {
-    val randomRhs = chooseRhs(alternativeRhs)(seed)
+                     depth: Int)(implicit grammar: Grammar,
+                                 seed: Long): Either[ProductionError, Rhs] = {
+    /* Randomly choose RHS
+     * If depth = 0, choose path to terminal
+     */
+    val randomRhs = chooseRhs(alternativeRhs, depth)(seed)
 
-    val derivedSymbols = randomRhs.symbols.map(elem =>
-      elem._1 match {
-        case nt: Nonterminal =>
-          val prodRule = findProductionRule(nt)
+    val derivedSymbols = randomRhs.map(rhs =>
+      rhs.symbols.map(elem =>
+        elem._1 match {
+          case nt: Nonterminal =>
+            val prodRule = findProductionRule(nt)
 
-          prodRule match {
-            case Right(rule) =>
-              // Choose random (respecting weight) Rhs
-              val rhsEither =
-                derive(rule.alternatives, maxBreadth, maxDepth - 1)
+            prodRule match {
+              case Right(rule) =>
+                // Choose random RHS while respecting weight
+                val rhsEither =
+                  derive(rule.alternatives, maxBreadth, depth - 1)
 
-              rhsEither match {
-                case Right(recRhs) =>
-                  // Randomly expand breadth on symbols
-                  expandBreadth(recRhs.symbols, maxBreadth)(seed)
+                rhsEither match {
+                  case Right(recRhs) =>
+                    // Randomly expand breadth on symbols
+                    expandBreadth(recRhs.symbols, maxBreadth)(seed)
 
-                case Left(error) =>
-                  // Empty Seq means missing production rule
-                  Seq()
-              }
+                  case Left(error) =>
+                    // Empty Seq means missing production rule
+                    Seq()
+                }
 
-            case Left(error) =>
-              // Empty Seq means missing production rule
-              Seq()
-          }
+              case Left(error) =>
+                // Empty Seq means missing production rule
+                Seq()
+            }
 
-        case Terminal(_) => Seq(elem)
-    })
+          case Terminal(_) => Seq(elem)
+      }))
 
-    if (derivedSymbols.exists(_.isEmpty)) {
-      Left(MissingRule)
-    } else {
-      Right(Rhs(derivedSymbols.flatten))
+    derivedSymbols match {
+      case Right(derivedSyms) =>
+        if (derivedSyms.exists(_.isEmpty)) {
+          Left(MissingRule)
+        } else {
+          Right(Rhs(derivedSyms.flatten))
+        }
+      case Left(error) => Left(error)
     }
   }
 
@@ -112,26 +119,48 @@ object Production {
     }
   }
 
-  private def chooseRhs(alternatives: AlternativeRhs)(seed: Long): Rhs = {
-    val rnd = Random
-    rnd.setSeed(seed)
-    val p = rnd.nextFloat
+  private def chooseRhs(alternatives: AlternativeRhs, depth: Int)(
+      seed: Long): Either[ProductionError, Rhs] =
+    if (depth > 0) {
+      val rnd = Random
+      rnd.setSeed(seed)
+      val p = rnd.nextFloat
 
-    val weightSum = alternatives.value.foldLeft(0) {
-      case (s, (_, weight)) => s + weight
+      val weightSum = alternatives.value.foldLeft(0) {
+        case (s, (_, weight)) => s + weight
+      }
+
+      // Inverse CDF
+      val rhs = alternatives.value.zipWithIndex.find {
+        case (elem, i) =>
+          val cdf = alternatives.value.take(i + 1).foldLeft(0.0) {
+            case (s, (_, weight)) => s + weight / weightSum.toFloat
+          }
+
+          if (p <= cdf) true else false
+      }
+
+      // Fix
+      Right(rhs.get._1._1)
+    } else {
+      // Choose RHS which leads to a terminal
+      chooseRhsTerminals(alternatives)
     }
 
-    // Inverse CDF
-    val rhs = alternatives.value.zipWithIndex.find {
-      case (elem, i) =>
-        val cdf = alternatives.value.take(i + 1).foldLeft(0.0) {
-          case (s, (_, weight)) => s + weight / weightSum.toFloat
-        }
-
-        if (p <= cdf) true else false
+  private def chooseRhsTerminals(
+      alternativeRhs: AlternativeRhs): Either[ProductionError, Rhs] = {
+    val possibleRhs = alternativeRhs.value.filter {
+      case (rhs, weight) => isTerminalRhs(rhs)
     }
 
-    // Fix
-    rhs.get._1._1
+    if (possibleRhs.nonEmpty) {
+      // TODO: Choose randomly while respecting weights
+      Right(possibleRhs(0)._1)
+    } else {
+      Left(NoTerminalFound)
+    }
   }
+
+  private def isTerminalRhs(rhs: Rhs): Boolean =
+    rhs.symbols.forall { case (symbol, _) => symbol.isInstanceOf[Terminal] }
 }

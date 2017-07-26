@@ -5,8 +5,9 @@ import coop.rchain.rosette.parser.fuzzer.Symbols._
 import scala.util.Random
 
 object FuzzyTerm {
-  def randomTerm(grammar: Grammar, maxDepth: Int)(seed: Long): String = {
-    val terminals = Production.produce(Nonterminal(Start))(grammar, seed)
+  def randomTerm(grammar: Grammar, depth: Int)(seed: Long): String = {
+    val terminals =
+      Production.produce(Nonterminal(Program), depth)(grammar, seed)
 
     terminals match {
       case Right(ts) =>
@@ -22,6 +23,7 @@ object FuzzyTerm {
     rnd.setSeed(seed)
 
     terminal match {
+      case Fix(value) => value
       case Id =>
         "\"" + UUID
           .randomUUID()
