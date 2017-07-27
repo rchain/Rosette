@@ -28,13 +28,13 @@ object Production {
   /*
    * Return random production for a nonterminal
    */
-  def produce(nt: Nonterminal, depth: Int)(
+  def produce(nt: Nonterminal, maxBreadth: Int, depth: Int)(
       implicit grammar: Grammar,
       seed: Long): Either[ProductionError, Seq[Terminal]] =
     try {
       for {
         prodRule <- findProductionRule(nt)
-        rhsTerminals <- derive(prodRule.alternatives, 5, 5)
+        rhsTerminals <- derive(prodRule.alternatives, maxBreadth, depth)
       } yield {
         rhsTerminals.symbols.map(_._1.asInstanceOf[Terminal])
       }
