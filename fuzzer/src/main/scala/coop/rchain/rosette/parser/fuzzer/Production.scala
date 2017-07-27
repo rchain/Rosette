@@ -18,7 +18,9 @@ case class ProductionRule(lhs: Nonterminal, alternatives: AlternativeRhs)
 
 case class AlternativeRhs(value: NonEmptyList[(Rhs, Production.Weight)])
 
-case class Rhs(symbols: Seq[(Symbol, Occurrence)])
+case class Rhs(symbols: Seq[Sym])
+
+case class Sym(symbol: Symbol, occurrence: Occurrence)
 
 case class Grammar(rules: Seq[ProductionRule])
 
@@ -36,7 +38,7 @@ object Production {
         prodRule <- findProductionRule(nt)
         rhsTerminals <- derive(prodRule.alternatives, maxBreadth, depth)
       } yield {
-        rhsTerminals.symbols.map(_._1.asInstanceOf[Terminal])
+        rhsTerminals.symbols.map(_.symbol.asInstanceOf[Terminal])
       }
     } catch {
       case e: ClassCastException => Left(UnexpectedNonterminal)
@@ -56,14 +58,13 @@ object Production {
     val randomRhs = chooseRhs(alternativeRhs, depth)(seed)
 
     val derivedSymbols = randomRhs.map(rhs =>
-      rhs.symbols.map(elem =>
-        elem._1 match {
+      rhs.symbols.map(sym =>
+        sym.symbol match {
           case nt: Nonterminal =>
             val prodRule = findProductionRule(nt)
 
             prodRule match {
               case Right(rule) =>
-                // Choose random RHS while respecting weight
                 val rhsEither =
                   derive(rule.alternatives, maxBreadth, depth - 1)
 
@@ -82,7 +83,7 @@ object Production {
                 Seq()
             }
 
-          case Terminal(_) => Seq(elem)
+          case Terminal(_) => Seq(sym)
       }))
 
     derivedSymbols match {
@@ -106,18 +107,16 @@ object Production {
     }
   }
 
-  private def expandBreadth(
-      symbols: Seq[(Symbol, Occurrence)],
-      maxBreadth: Int)(seed: Long): Seq[(Symbol, Occurrence)] = {
+  private def expandBreadth(syms: Seq[Sym], maxBreadth: Int)(
+      seed: Long): Seq[Sym] = {
     val rnd = Random
 
-    symbols.flatMap {
-      case (sym, occurrence) =>
-        occurrence match {
-          case Once => Seq((sym, occurrence))
-          case Plus => Seq.fill(rnd.nextInt(maxBreadth) + 1)((sym, occurrence))
-          case Star => Seq.fill(rnd.nextInt(maxBreadth))((sym, occurrence))
-        }
+    syms.flatMap { sym =>
+      sym.occurrence match {
+        case Once => Seq(sym)
+        case Plus => Seq.fill(rnd.nextInt(maxBreadth) + 1)(sym)
+        case Star => Seq.fill(rnd.nextInt(maxBreadth))(sym)
+      }
     }
   }
 
@@ -133,7 +132,7 @@ object Production {
   private def chooseRhsTerminals(alternativeRhs: AlternativeRhs)(
       seed: Long): Either[ProductionError, Rhs] = {
     val possibleRhs = alternativeRhs.value.filter {
-      case (rhs, weight) => isTerminalRhs(rhs)
+      case (rhs, _) => isTerminalRhs(rhs)
     }
 
     if (possibleRhs.nonEmpty) {
@@ -146,7 +145,7 @@ object Production {
   }
 
   private def isTerminalRhs(rhs: Rhs): Boolean =
-    rhs.symbols.forall { case (symbol, _) => symbol.isInstanceOf[Terminal] }
+    rhs.symbols.forall(sym => sym.symbol.isInstanceOf[Terminal])
 
   private def chooseRhsWeighted(
       weightedRhs: NonEmptyList[(Rhs, Production.Weight)])(seed: Long): Rhs = {

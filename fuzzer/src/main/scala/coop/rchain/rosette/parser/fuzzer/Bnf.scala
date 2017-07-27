@@ -9,30 +9,29 @@ object Bnf {
       ProductionRule(Nonterminal(Program),
                      AlternativeRhs(
                        NonEmptyList(
-                         (Rhs(Seq((Nonterminal(Expr), Star))), 1),
+                         (Rhs(Seq(Sym(Nonterminal(Expr), Star))), 1),
                          List.empty
                        ))),
       ProductionRule(
         Nonterminal(Expr),
         AlternativeRhs(
           NonEmptyList(
-            (Rhs(Seq((Nonterminal(Free), Once))), 1),
-            List((Rhs(Seq((Nonterminal(Quote), Once))), 1),
-                 (Rhs(Seq((Terminal(String), Once))), 1))
+            (Rhs(Seq(Sym(Nonterminal(Free), Once))), 0),
+            List((Rhs(Seq(Sym(Nonterminal(Quote), Once))), 8),
+                 (Rhs(Seq(Sym(Terminal(String), Star))), 1))
           ))
       ),
       ProductionRule(
         Nonterminal(Free),
         AlternativeRhs(
           NonEmptyList(
-            (Rhs(
-               Seq(
-                 (Terminal(Fix("(free [ ")), Once),
-                 (Nonterminal(Expr), Star),
-                 (Terminal(Fix(" ]")), Once),
-                 (Nonterminal(Expr), Plus),
-                 (Terminal(Fix(" )")), Once)
-               )),
+            (Rhs(Seq(
+               Sym(Terminal(Fix("(free [ ")), Once),
+               Sym(Nonterminal(Expr), Star),
+               Sym(Terminal(Fix(" ]")), Once),
+               Sym(Nonterminal(Expr), Plus),
+               Sym(Terminal(Fix(" )")), Once)
+             )),
              1),
             List.empty
           ))
@@ -42,8 +41,8 @@ object Bnf {
                        NonEmptyList(
                          (Rhs(
                             Seq(
-                              (Terminal(Fix("'")), Once),
-                              (Nonterminal(Expr), Once)
+                              Sym(Terminal(Fix("'")), Once),
+                              Sym(Nonterminal(Expr), Once)
                             )),
                           1),
                          List.empty
