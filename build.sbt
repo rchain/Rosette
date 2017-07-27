@@ -9,7 +9,8 @@ lazy val commonSettings = Seq(
 
 lazy val fuzzer = (project in file("fuzzer")).settings(
   commonSettings,
-  name := "Fuzzer"
+  name := "Fuzzer",
+  libraryDependencies += "org.typelevel" %% "cats" % "0.9.0"
 )
 
 lazy val connector = (project in file("connector"))

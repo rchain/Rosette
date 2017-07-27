@@ -1,5 +1,6 @@
 package coop.rchain.rosette.parser.fuzzer
 
+import cats.data.NonEmptyList
 import coop.rchain.rosette.parser.fuzzer.Symbols._
 
 object Bnf {
@@ -7,22 +8,23 @@ object Bnf {
     Seq(
       ProductionRule(Nonterminal(Program),
                      AlternativeRhs(
-                       Seq(
-                         (Rhs(Seq((Nonterminal(Expr), Star))), 1)
+                       NonEmptyList(
+                         (Rhs(Seq((Nonterminal(Expr), Star))), 1),
+                         List.empty
                        ))),
       ProductionRule(
         Nonterminal(Expr),
         AlternativeRhs(
-          Seq(
+          NonEmptyList(
             (Rhs(Seq((Nonterminal(Free), Once))), 1),
-            (Rhs(Seq((Nonterminal(Quote), Once))), 1),
-            (Rhs(Seq((Terminal(String), Once))), 1)
+            List((Rhs(Seq((Nonterminal(Quote), Once))), 1),
+                 (Rhs(Seq((Terminal(String), Once))), 1))
           ))
       ),
       ProductionRule(
         Nonterminal(Free),
         AlternativeRhs(
-          Seq(
+          NonEmptyList(
             (Rhs(
                Seq(
                  (Terminal(Fix("(free [ ")), Once),
@@ -31,18 +33,20 @@ object Bnf {
                  (Nonterminal(Expr), Plus),
                  (Terminal(Fix(" )")), Once)
                )),
-             1)
+             1),
+            List.empty
           ))
       ),
       ProductionRule(Nonterminal(Quote),
                      AlternativeRhs(
-                       Seq(
+                       NonEmptyList(
                          (Rhs(
                             Seq(
                               (Terminal(Fix("'")), Once),
                               (Nonterminal(Expr), Once)
                             )),
-                          1)
+                          1),
+                         List.empty
                        )))
     )
   )

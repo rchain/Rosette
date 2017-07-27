@@ -1,6 +1,8 @@
 package coop.rchain.rosette.parser.fuzzer
 
+import cats.data.NonEmptyList
 import coop.rchain.rosette.parser.fuzzer.Symbols._
+
 import scala.util.Random
 
 sealed trait Symbol
@@ -14,7 +16,7 @@ case object Star extends Occurrence
 
 case class ProductionRule(lhs: Nonterminal, alternatives: AlternativeRhs)
 
-case class AlternativeRhs(value: Seq[(Rhs, Production.Weight)])
+case class AlternativeRhs(value: NonEmptyList[(Rhs, Production.Weight)])
 
 case class Rhs(symbols: Seq[(Symbol, Occurrence)])
 
@@ -122,40 +124,22 @@ object Production {
   private def chooseRhs(alternatives: AlternativeRhs, depth: Int)(
       seed: Long): Either[ProductionError, Rhs] =
     if (depth > 0) {
-      val rnd = Random
-      rnd.setSeed(seed)
-      val p = rnd.nextFloat
-
-      val weightSum = alternatives.value.foldLeft(0) {
-        case (s, (_, weight)) => s + weight
-      }
-
-      // Inverse CDF
-      val rhs = alternatives.value.zipWithIndex.find {
-        case (elem, i) =>
-          val cdf = alternatives.value.take(i + 1).foldLeft(0.0) {
-            case (s, (_, weight)) => s + weight / weightSum.toFloat
-          }
-
-          if (p <= cdf) true else false
-      }
-
-      // Fix
-      Right(rhs.get._1._1)
+      Right(chooseRhsWeighted(alternatives.value)(seed))
     } else {
       // Choose RHS which leads to a terminal
-      chooseRhsTerminals(alternatives)
+      chooseRhsTerminals(alternatives)(seed)
     }
 
-  private def chooseRhsTerminals(
-      alternativeRhs: AlternativeRhs): Either[ProductionError, Rhs] = {
+  private def chooseRhsTerminals(alternativeRhs: AlternativeRhs)(
+      seed: Long): Either[ProductionError, Rhs] = {
     val possibleRhs = alternativeRhs.value.filter {
       case (rhs, weight) => isTerminalRhs(rhs)
     }
 
     if (possibleRhs.nonEmpty) {
-      // TODO: Choose randomly while respecting weights
-      Right(possibleRhs(0)._1)
+      val nonEmptyPossibleRhs =
+        NonEmptyList(possibleRhs.head, possibleRhs.tail)
+      Right(chooseRhsWeighted(nonEmptyPossibleRhs)(seed))
     } else {
       Left(NoTerminalFound)
     }
@@ -163,4 +147,32 @@ object Production {
 
   private def isTerminalRhs(rhs: Rhs): Boolean =
     rhs.symbols.forall { case (symbol, _) => symbol.isInstanceOf[Terminal] }
+
+  private def chooseRhsWeighted(
+      weightedRhs: NonEmptyList[(Rhs, Production.Weight)])(seed: Long): Rhs = {
+    val rnd = Random
+    rnd.setSeed(seed)
+    val p = rnd.nextFloat
+
+    val weightSum = weightedRhs.foldLeft(0) {
+      case (s, (_, weight)) => s + weight
+    }
+
+    // Inverse CDF
+    val rhs = weightedRhs.zipWithIndex
+      .find {
+        case (elem, i) =>
+          val cdf = weightedRhs.toList.take(i + 1).foldLeft(0.0) {
+            case (s, (_, weight)) => s + weight / weightSum.toFloat
+          }
+
+          if (p <= cdf) true else false
+      }
+      // This is ugly but fine since weightedRhs can't be empty
+      .get
+      ._1
+      ._1
+
+    rhs
+  }
 }
