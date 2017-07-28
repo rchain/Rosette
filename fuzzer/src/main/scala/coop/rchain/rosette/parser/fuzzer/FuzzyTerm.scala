@@ -8,7 +8,8 @@ object FuzzyTerm {
   def randomTerm(grammar: Grammar, maxBreadth: Int, maxDepth: Int)(
       seed: Long): String = {
     val terminals =
-      Production.produce(Nonterminal(Program), maxBreadth, maxDepth)(seed, grammar)
+      Production.produce(Nonterminal(Program), maxBreadth, maxDepth)(seed,
+                                                                     grammar)
 
     terminals match {
       case Right(ts) =>

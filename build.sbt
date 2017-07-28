@@ -6,7 +6,8 @@ lazy val commonSettings = Seq(
   version := "0.1.0-SNAPSHOT",
   scalaOrganization in ThisBuild := "org.typelevel",
   scalacOptions += "-Ypartial-unification", // enable fix for SI-2712
-  scalacOptions += "-Yliteral-types"       // enable SIP-23 implementation
+  scalacOptions += "-Yliteral-types",       // enable SIP-23 implementation
+  scalafmtOnCompile in Compile := true
 )
 
 lazy val fuzzer = (project in file("fuzzer")).settings(
