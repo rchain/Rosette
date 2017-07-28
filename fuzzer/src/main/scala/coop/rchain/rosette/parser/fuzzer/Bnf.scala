@@ -9,23 +9,23 @@ object Bnf {
       ProductionRule(Nonterminal(Program),
                      AlternativeRhs(
                        NonEmptyList(
-                         (Rhs(Seq(Sym(Nonterminal(Expr), Star))), 1),
+                         (Rhs(List(Sym(Nonterminal(Expr), Plus))), 1),
                          List.empty
                        ))),
       ProductionRule(
         Nonterminal(Expr),
         AlternativeRhs(
           NonEmptyList(
-            (Rhs(Seq(Sym(Nonterminal(Free), Once))), 0),
-            List((Rhs(Seq(Sym(Nonterminal(Quote), Once))), 8),
-                 (Rhs(Seq(Sym(Terminal(String), Star))), 1))
+            (Rhs(List(Sym(Nonterminal(Free), Once))), 0),
+            List((Rhs(List(Sym(Nonterminal(Quote), Once))), 8),
+                 (Rhs(List(Sym(Terminal(String), Star))), 1))
           ))
       ),
       ProductionRule(
         Nonterminal(Free),
         AlternativeRhs(
           NonEmptyList(
-            (Rhs(Seq(
+            (Rhs(List(
                Sym(Terminal(Fix("(free [ ")), Once),
                Sym(Nonterminal(Expr), Star),
                Sym(Terminal(Fix(" ]")), Once),
@@ -40,7 +40,7 @@ object Bnf {
                      AlternativeRhs(
                        NonEmptyList(
                          (Rhs(
-                            Seq(
+                            List(
                               Sym(Terminal(Fix("'")), Once),
                               Sym(Nonterminal(Expr), Once)
                             )),

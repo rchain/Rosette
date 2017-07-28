@@ -1,6 +1,9 @@
 package coop.rchain.rosette.parser.fuzzer
 
 import cats.data.NonEmptyList
+import cats.instances.list._
+import cats.instances.either._
+import cats.syntax.traverse._
 import coop.rchain.rosette.parser.fuzzer.Symbols._
 
 import scala.util.Random
@@ -18,7 +21,7 @@ case class ProductionRule(lhs: Nonterminal, alternatives: AlternativeRhs)
 
 case class AlternativeRhs(value: NonEmptyList[(Rhs, Production.Weight)])
 
-case class Rhs(symbols: Seq[Sym])
+case class Rhs(symbols: List[Sym])
 
 case class Sym(symbol: Symbol, occurrence: Occurrence)
 
@@ -26,74 +29,96 @@ case class Grammar(rules: Seq[ProductionRule])
 
 object Production {
   type Weight = Int
+  type Seed = Long
 
   /*
    * Return random production for a nonterminal
    */
-  def produce(nt: Nonterminal, maxBreadth: Int, depth: Int)(
-      implicit grammar: Grammar,
-      seed: Long): Either[ProductionError, Seq[Terminal]] =
+  def produce(nt: Nonterminal, maxBreadth: Int, maxDepth: Int)(
+      implicit seed: Seed, grammar: Grammar): Either[ProductionError, List[Terminal]] =
     try {
       for {
         prodRule <- findProductionRule(nt)
-        rhsTerminals <- derive(prodRule.alternatives, maxBreadth, depth)
+        terminals <- deriveInit(prodRule.alternatives, maxBreadth, maxDepth)
       } yield {
-        rhsTerminals.symbols.map(_.symbol.asInstanceOf[Terminal])
+        terminals.map(_.asInstanceOf[Terminal])
       }
     } catch {
       case e: ClassCastException => Left(UnexpectedNonterminal)
     }
 
-  /*
-   * Derive random production from RHS by following production rules from grammar
-   * Will return MissingRule error if there is no production rule for a nonterminal
-   */
-  private def derive(alternativeRhs: AlternativeRhs,
-                     maxBreadth: Int,
-                     depth: Int)(implicit grammar: Grammar,
-                                 seed: Long): Either[ProductionError, Rhs] = {
-    /* Randomly choose RHS
-     * If depth = 0, choose path to terminal
-     */
-    val randomRhs = chooseRhs(alternativeRhs, depth)(seed)
+  private def deriveInit(alternativeRhs: AlternativeRhs,
+                         maxBreadth: Int,
+                         maxDepth: Int)(implicit seed: Seed, grammar: Grammar): Either[ProductionError, List[Symbol]] = {
 
-    val derivedSymbols = randomRhs.map(rhs =>
-      rhs.symbols.map(sym =>
-        sym.symbol match {
-          case nt: Nonterminal =>
-            val prodRule = findProductionRule(nt)
+    // Randomly choose RHS according to weights
+    val rhs = randomRhsWeighted(alternativeRhs.value)
 
-            prodRule match {
-              case Right(rule) =>
-                val rhsEither =
-                  derive(rule.alternatives, maxBreadth, depth - 1)
+    // Expand
+    val expanded: List[Symbol] = expandBreadth(rhs, maxBreadth)
 
-                rhsEither match {
-                  case Right(recRhs) =>
-                    // Randomly expand breadth on symbols
-                    expandBreadth(recRhs.symbols, maxBreadth)(seed)
+    // Derive symbols recursively
+    expanded.flatTraverse(symbol => deriveRec(symbol, maxDepth): Either[ProductionError, List[Symbol]])
+  }
 
-                  case Left(error) =>
-                    // Empty Seq means missing production rule
-                    Seq()
-                }
+  private def deriveRec(symbol: Symbol,
+                        maxDepth: Int)(implicit seed: Seed, grammar: Grammar): Either[ProductionError, List[Symbol]] =
+    symbol match {
+      case t: Terminal => Right(List(t))
 
-              case Left(error) =>
-                // Empty Seq means missing production rule
-                Seq()
-            }
+      case nt: Nonterminal =>
+        val depth = Random.nextInt(maxDepth + 1)
 
-          case Terminal(_) => Seq(sym)
-      }))
+        if (depth > 0) {
+          val rhs = randomRhsWeighted(nt)
 
-    derivedSymbols match {
-      case Right(derivedSyms) =>
-        if (derivedSyms.exists(_.isEmpty)) {
-          Left(MissingRule)
+          rhs match {
+            case Right(symList) =>
+              symList.flatTraverse(s =>
+                deriveRec(s, depth - 1): Either[ProductionError, List[Symbol]]): Either[ProductionError, List[Symbol]]
+
+            case Left(error) => Left(error)
+          }
         } else {
-          Right(Rhs(derivedSyms.flatten))
+          findTerminals(nt)
         }
-      case Left(error) => Left(error)
+    }
+
+  private def expandBreadth(rhs: Rhs, maxBreadth: Int)(implicit seed: Seed): List[Symbol] = {
+    val rnd = Random
+
+    rhs.symbols.flatMap{sym =>
+      sym.occurrence match {
+        case Once => List(sym.symbol)
+        case Plus => List.fill(rnd.nextInt(maxBreadth) + 1)(sym.symbol)
+        case Star => List.fill(rnd.nextInt(maxBreadth))(sym.symbol)
+      }
+    }
+  }
+
+  private def findTerminals(
+      nt: Nonterminal)(implicit seed: Seed, grammar: Grammar): Either[ProductionError, List[Terminal]] = {
+    val rnd = Random
+    rnd.setSeed(seed)
+
+    val prodRule: Either[ProductionError, ProductionRule] = findProductionRule(nt)
+
+    prodRule.map{rule =>
+      val rhs = randomRhsWeighted(rule.alternatives.value)
+
+      rhs.symbols.map{sym =>
+        sym.symbol match {
+          case t: Terminal => t
+          case nt: Nonterminal =>
+            nt.symbol match {
+              // TODO
+              case Expr => Terminal(Fixnum)
+              case Quote => Terminal(Fix("QUOTE"))
+              case Free => Terminal(Fix("FREE"))
+              case _ => Terminal(Fix("ERROR"))
+            }
+        }
+      }
     }
   }
 
@@ -107,48 +132,13 @@ object Production {
     }
   }
 
-  private def expandBreadth(syms: Seq[Sym], maxBreadth: Int)(
-      seed: Long): Seq[Sym] = {
-    val rnd = Random
-
-    syms.flatMap { sym =>
-      sym.occurrence match {
-        case Once => Seq(sym)
-        case Plus => Seq.fill(rnd.nextInt(maxBreadth) + 1)(sym)
-        case Star => Seq.fill(rnd.nextInt(maxBreadth))(sym)
-      }
-    }
+  private def randomRhsWeighted(nt: Nonterminal)(implicit seed: Seed, grammar: Grammar): Either[ProductionError, List[Symbol]] = {
+    val rule = findProductionRule(nt)(grammar)
+    rule.map(r => randomRhsWeighted(r.alternatives.value).symbols.map(_.symbol))
   }
 
-  private def chooseRhs(alternatives: AlternativeRhs, depth: Int)(
-      seed: Long): Either[ProductionError, Rhs] =
-    if (depth > 0) {
-      Right(chooseRhsWeighted(alternatives.value)(seed))
-    } else {
-      // Choose RHS which leads to a terminal
-      chooseRhsTerminals(alternatives)(seed)
-    }
-
-  private def chooseRhsTerminals(alternativeRhs: AlternativeRhs)(
-      seed: Long): Either[ProductionError, Rhs] = {
-    val possibleRhs = alternativeRhs.value.filter {
-      case (rhs, _) => isTerminalRhs(rhs)
-    }
-
-    if (possibleRhs.nonEmpty) {
-      val nonEmptyPossibleRhs =
-        NonEmptyList(possibleRhs.head, possibleRhs.tail)
-      Right(chooseRhsWeighted(nonEmptyPossibleRhs)(seed))
-    } else {
-      Left(NoTerminalFound)
-    }
-  }
-
-  private def isTerminalRhs(rhs: Rhs): Boolean =
-    rhs.symbols.forall(sym => sym.symbol.isInstanceOf[Terminal])
-
-  private def chooseRhsWeighted(
-      weightedRhs: NonEmptyList[(Rhs, Production.Weight)])(seed: Long): Rhs = {
+  private def randomRhsWeighted(
+      weightedRhs: NonEmptyList[(Rhs, Production.Weight)])(implicit seed: Seed): Rhs = {
     val rnd = Random
     rnd.setSeed(seed)
     val p = rnd.nextFloat

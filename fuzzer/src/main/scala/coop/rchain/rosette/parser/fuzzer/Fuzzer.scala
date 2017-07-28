@@ -5,10 +5,10 @@ import scala.util.Random
 object Fuzzer {
   val fuzzyTerms: Stream[String] =
     Stream.continually(
-      FuzzyTerm.randomTerm(Bnf.grammar, 1, 1)(Random.nextLong))
+      FuzzyTerm.randomTerm(Bnf.grammar, 2, 8)(Random.nextLong))
 
   def main(args: Array[String]): Unit =
-    fuzzyTerms.take(1).foreach(println(_))
+    fuzzyTerms.take(4).foreach(println(_))
 
   def getPositiveTestFile: String = "pos.txt"
 

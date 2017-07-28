@@ -5,11 +5,10 @@ import coop.rchain.rosette.parser.fuzzer.Symbols._
 import scala.util.Random
 
 object FuzzyTerm {
-  def randomTerm(grammar: Grammar, maxBreadth: Int, depth: Int)(
+  def randomTerm(grammar: Grammar, maxBreadth: Int, maxDepth: Int)(
       seed: Long): String = {
     val terminals =
-      Production.produce(Nonterminal(Program), maxBreadth, depth)(grammar,
-                                                                  seed)
+      Production.produce(Nonterminal(Program), maxBreadth, maxDepth)(seed, grammar)
 
     terminals match {
       case Right(ts) =>

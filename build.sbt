@@ -2,9 +2,11 @@ import Dependencies._
 
 lazy val commonSettings = Seq(
   organization := "coop.rchain",
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.2-bin-typelevel-4",
   version := "0.1.0-SNAPSHOT",
-  scalafmtOnCompile in ThisBuild := true
+  scalaOrganization in ThisBuild := "org.typelevel",
+  scalacOptions += "-Ypartial-unification", // enable fix for SI-2712
+  scalacOptions += "-Yliteral-types"       // enable SIP-23 implementation
 )
 
 lazy val fuzzer = (project in file("fuzzer")).settings(
