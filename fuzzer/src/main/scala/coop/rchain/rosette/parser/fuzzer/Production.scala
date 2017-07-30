@@ -67,12 +67,15 @@ object Production {
 
   private def deriveRec(symbol: Symbol, maxDepth: Int)(
       implicit seed: Seed,
-      grammar: Grammar): Either[ProductionError, List[Symbol]] =
+      grammar: Grammar): Either[ProductionError, List[Symbol]] = {
+    val rnd = Random
+    rnd.setSeed(seed)
+
     symbol match {
       case t: Terminal => Right(List(t))
 
       case nt: Nonterminal =>
-        val depth = Random.nextInt(maxDepth + 1)
+        val depth = rnd.nextInt(maxDepth + 1)
 
         if (depth > 0) {
           val rhs = randomRhsWeighted(nt)
@@ -81,7 +84,7 @@ object Production {
             case Right(symList) =>
               symList.flatTraverse(
                 s =>
-                  deriveRec(s, depth - 1): Either[
+                  deriveRec(s, depth - 1)(rnd.nextLong, grammar): Either[
                     ProductionError,
                     List[Symbol]]): Either[ProductionError, List[Symbol]]
 
@@ -91,6 +94,7 @@ object Production {
           findTerminals(nt)
         }
     }
+  }
 
   private def expandBreadth(rhs: Rhs, maxBreadth: Int)(
       implicit seed: Seed): List[Symbol] = {
@@ -114,22 +118,56 @@ object Production {
     val prodRule: Either[ProductionError, ProductionRule] = findProductionRule(
       nt)
 
-    prodRule.map { rule =>
-      val rhs = randomRhsWeighted(rule.alternatives.value)
+    prodRule match {
+      case Right(rule) =>
+        val rhs = randomRhsWeighted(rule.alternatives.value)
 
-      rhs.symbols.map { sym =>
-        sym.symbol match {
-          case t: Terminal => t
-          case nt: Nonterminal =>
-            nt.symbol match {
-              // TODO
-              case Expr => Terminal(Fixnum)
-              case Quote => Terminal(Fix("QUOTE"))
-              case Free => Terminal(Fix("FREE"))
-              case _ => Terminal(Fix("ERROR"))
-            }
+        rhs.symbols.flatTraverse(sym =>
+          sym.symbol match {
+            case t: Terminal =>
+              Right(List(t)): Either[ProductionError, List[Terminal]]
+            case nt: Nonterminal =>
+              fixedFindTerminals(nt): Either[ProductionError, List[Terminal]]
+        })
+
+      case Left(error) => Left(error)
+    }
+  }
+
+  private def fixedFindTerminals(nt: Nonterminal)(
+      implicit seed: Seed,
+      grammar: Grammar): Either[ProductionError, List[Terminal]] = {
+    val rnd = Random
+    rnd.setSeed(seed)
+
+    val rhs = randomRhsWeighted(nt)
+
+    rhs.map(_.flatMap {
+      case nt: Nonterminal =>
+        nt.symbol match {
+          case Expr => List(randomConstant()(rnd.nextLong))
+          case Pattern =>
+            List(Terminal(Fix("[ ")),
+                 randomConstant()(rnd.nextLong),
+                 Terminal(Fix(" ]")))
+          //case Id => randomId()
+          case _ => List(randomConstant()(rnd.nextLong))
         }
-      }
+      case t: Terminal => List(t)
+    })
+  }
+
+  private def randomConstant()(implicit seed: Seed): Terminal = {
+    val rnd = Random
+    rnd.setSeed(seed)
+
+    rnd.nextInt(6) match {
+      case 0 => Terminal(RFixnum)
+      case 1 => Terminal(RString)
+      case 2 => Terminal(RBoolean)
+      case 3 => Terminal(RFloat)
+      case 4 => Terminal(RChar)
+      case 5 => Terminal(REscape)
     }
   }
 
