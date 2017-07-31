@@ -18,6 +18,7 @@ object FuzzyTerm {
       case Right(ts) =>
         ts.map(terminal => randomGroundTerm(terminal.symbol)(rnd.nextLong))
           .mkString("")
+      case Left(MissingRule(nt)) => s"Missing rule for symbol: ${nt.symbol}"
       case Left(error) => s"Error: $error"
     }
   }
@@ -42,10 +43,15 @@ object FuzzyTerm {
           .replace("-", "")
           .substring(0, truncate) + "\""
       case RFixnum => rnd.nextInt(Int.MaxValue).toString
-      case RBoolean => if (rnd.nextBoolean()) "#t" else "#f"
       case RFloat => rnd.nextFloat().toString
+      case RBoolean => if (rnd.nextBoolean()) "#t" else "#f"
       case RChar => "#\\a"
       case REscape => "#\\\\xff"
+      case RAbsent => "#absent"
+      case REof => "#eof"
+      case RNiv => "#niv"
+      case ReadError => "#read-error"
+      case IncompleteIo => "incomplete-io"
     }
   }
 }

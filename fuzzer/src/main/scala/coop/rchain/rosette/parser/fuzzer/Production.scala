@@ -34,7 +34,10 @@ object Production {
   /*
    * Return random production for a nonterminal
    */
-  def produce(nt: Nonterminal, maxBreadth: Int, maxDepth: Int)(
+  def produce(nt: Nonterminal,
+              maxBreadth: Int,
+              maxDepth: Int,
+              legal: Boolean = true)(
       implicit seed: Seed,
       grammar: Grammar): Either[ProductionError, List[Terminal]] =
     try {
@@ -177,7 +180,7 @@ object Production {
 
     rule match {
       case Some(r) => Right(r)
-      case None => Left(MissingRule)
+      case None => Left(MissingRule(nt))
     }
   }
 

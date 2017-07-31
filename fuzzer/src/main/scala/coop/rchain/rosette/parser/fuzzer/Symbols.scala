@@ -10,6 +10,11 @@ object Symbols {
   case object RFloat extends TerminalSym
   case object RChar extends TerminalSym
   case object REscape extends TerminalSym
+  case object RAbsent extends TerminalSym
+  case object REof extends TerminalSym
+  case object RNiv extends TerminalSym
+  case object ReadError extends TerminalSym
+  case object IncompleteIo extends TerminalSym
 
   sealed trait NonterminalSym
   case object Program extends NonterminalSym
@@ -20,14 +25,17 @@ object Symbols {
   case object Label extends NonterminalSym
   case object Block extends NonterminalSym
   case object SeqExpr extends NonterminalSym
+  case object LetHead extends NonterminalSym
   case object Let extends NonterminalSym
-  case object Letrec extends NonterminalSym
+  case object LetRecHead extends NonterminalSym
+  case object LetRec extends NonterminalSym
   case object If extends NonterminalSym
   case object Proc extends NonterminalSym
   case object Free extends NonterminalSym
   case object Goto extends NonterminalSym
   case object SetExpr extends NonterminalSym
   case object Constant extends NonterminalSym
+  case object Clause extends NonterminalSym
   case object Request extends NonterminalSym
   case object Send extends NonterminalSym
   case object Pattern extends NonterminalSym
