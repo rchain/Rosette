@@ -43,8 +43,8 @@ object FuzzyTerm {
       case RFixnum => rnd.nextInt(Int.MaxValue).toString
       case RFloat => rnd.nextFloat().toString
       case RBoolean => if (rnd.nextBoolean()) "#t" else "#f"
-      case RChar => "#\\a"
-      case REscape => "#\\\\xff"
+      case RChar => randomChar()
+      case REscape => randomEscape()
       case RAbsent => "#absent"
       case REof => "#eof"
       case RNiv => "#niv"
@@ -70,5 +70,28 @@ object FuzzyTerm {
     val rest: Stream[String] = Stream.continually(all(rnd.nextInt(all.size)))
 
     first + rest.take(31).foldLeft("")((s, c) => s + c)
+  }
+
+  private def randomChar()(implicit seed: Seed): String = {
+    val rnd = Random
+    rnd.setSeed(seed)
+
+    val chars = '0' to 'z'
+
+    "#\\" + chars(rnd.nextInt(chars.size))
+  }
+
+  private def randomEscape()(implicit seed: Seed): String = {
+    val rnd = Random
+    rnd.setSeed(seed)
+
+    val hexChars = ('a' to 'f').map(_.toString) ++ ('A' to 'F').map(_.toString) ++ (0 to 9)
+      .map(_.toString)
+    val hex = "#\\\\x" + hexChars(rnd.nextInt(hexChars.size)) + hexChars(
+      rnd.nextInt(hexChars.size))
+
+    val escapes = Seq("#\\\\n", "#\\\\r", "#\\\\t", "#\\\\f", "#\\\\\"") :+ hex
+
+    escapes(rnd.nextInt(escapes.size))
   }
 }
