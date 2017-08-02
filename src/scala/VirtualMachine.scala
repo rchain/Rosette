@@ -1,8 +1,8 @@
-class Code {
-    def lit(l : Int) : Atom = {}
+class Code extends Ob {
+    def lit(l : Int) : Option[Ob] = {}
 }
 
-class Ctxt {
+class Ctxt extends Ob {
     var argvec : Tuple;
     var ctxt : Option[Ctxt] = None;
     var nargs : Int;
@@ -15,28 +15,30 @@ class Ctxt {
     def scheduleStrand() : Unit = {}
 }
 
-object Ctxt {
+object Ctxt extends Ob {
     def create(a, ctxt : Ctxt) : Option[Ctxt] = {}
 }
 
-class Env {
+class Env extends Ob {
     def parent() : Option[Env] = {}
 }
 
-class Instr {
+class Instr extends Ob {
     var opcode : Op;
     var args : List[Int]; // Covers 16-bit args; may want 64-bit ones eventually
 }
 
-class Location {
-    var atom : Atom;
+class Location extends Ob {
+    var atom : Option[Ob];
 }
 object Location {
     def ArgReg(a : Int) : Option[Location] = {}
     def CtxtReg(r : Int) : Option[Location] = {}
 }
 
-class PC {
+class Ob {}
+
+class PC extends Ob {
     def fetch() : Instr = {}
 }
 
@@ -44,7 +46,7 @@ object PC {
     def fromInt(i : Int) : PC = {}    
 }
 
-class Tuple {
+class Tuple extends Ob {
     
 }
 
@@ -345,7 +347,8 @@ trait VirtualMachine {
     }
 
     def execute(op : OpLookupToArg, state : VMState) = {
-        // av
+        val argno = op.a;
+        val key : Option[Ob] = Some(state.code.get.lit(op.v));
         // may set doNextThreadFlag
     }
 
