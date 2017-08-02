@@ -15,10 +15,3 @@ lazy val fuzzer = (project in file("fuzzer")).settings(
   name := "Fuzzer",
   libraryDependencies += "org.typelevel" %% "cats" % "0.9.0"
 )
-
-lazy val connector = (project in file("connector"))
-  .settings(
-    commonSettings,
-    name := "Fuzzer-connector"
-  )
-  .dependsOn(fuzzer)
