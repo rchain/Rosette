@@ -3,14 +3,12 @@ package coop.rchain.rosette.parser.fuzzer
 import scala.util.Random
 
 object Fuzzer {
-  val fuzzyTerms: Stream[String] =
+  def fuzzyTermsValid(maxBreadth: Int = 5, maxDepth: Int = 5): Stream[String] =
     Stream.continually(
-      FuzzyTerm.randomTerm(Bnf.grammar, 2, 8)(Random.nextLong))
+      FuzzyTerm.randomTerm(Bnf.valid, maxBreadth, maxDepth)(Random.nextLong))
 
-  def main(args: Array[String]): Unit =
-    fuzzyTerms.take(4).foreach(println(_))
-
-  def getPositiveTestFile: String = "pos.txt"
-
-  def getNegativeTestFile: String = "neg.txt"
+  def fuzzyTermsInvalid(maxBreadth: Int = 5,
+                        maxDepth: Int = 5): Stream[String] =
+    Stream.continually(
+      FuzzyTerm.randomTerm(Bnf.invalid, maxBreadth, maxDepth)(Random.nextLong))
 }
