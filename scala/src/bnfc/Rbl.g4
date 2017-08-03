@@ -106,7 +106,7 @@ gotoexpr : OP 'goto' id CP ;
 
 set : OP 'set!' id expr CP ;
 
-label : OP 'label' id expr CP ;
+label : OP 'label' id expr+ CP ;
 
 /* Constant */
 
