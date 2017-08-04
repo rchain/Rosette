@@ -46,6 +46,6 @@ case class OpXferSrcToRslt(v : Int) extends Op;
 case class OpIndLitToArg(a : Int, v : Int) extends Op;
 case class OpIndLitToReg(r : Int, v : Int) extends Op;
 case class OpIndLitToRslt(v : Int) extends Op;
-case class OpImmediateLitToArg(fixnum: Boolean, v : Int, a : Int) extends Op;
-case class OpImmediateLitToReg(fixnum: Boolean, v : Int, r : Int) extends Op;
+case class OpImmediateLitToArg(v : Int, a : Int) extends Op;
+case class OpImmediateLitToReg(v : Int, r : Int) extends Op;
 case class OpUnknown() extends Op;

@@ -174,7 +174,7 @@ trait VirtualMachine {
     }
     
     def execute(op : OpPush, state : VMState) = {
-        state.ctxt = Ctxt.create(None, state.ctxt);        
+        state.ctxt = Ctxt.create(None, state.ctxt);
     }
     
     def execute(op : OpPop, state : VMState) = {
@@ -291,7 +291,6 @@ trait VirtualMachine {
     }
 
     def execute(op : OpApplyPrimArg, state : VMState) = {
-        // unmka
         val ctxt = state.ctxt.get;
         ctxt.nargs = op.m;
         val prim = Prim.nthPrim(op.k);
@@ -314,7 +313,6 @@ trait VirtualMachine {
     }
 
     def execute(op : OpApplyPrimReg, state : VMState) = {
-        // unmkr
         val ctxt = state.ctxt.get;
         ctxt.nargs = op.m;
         val prim = Prim.nthPrim(op.k);
@@ -337,7 +335,6 @@ trait VirtualMachine {
     }
 
     def execute(op : OpApplyCmd, state : VMState) = {
-        // unmk
         val ctxt = state.ctxt.get;
         ctxt.nargs = op.m;
         val prim = Prim.nthPrim(op.k);
@@ -442,74 +439,69 @@ trait VirtualMachine {
     }
 
     execute(op : OpXferGlobalToArg, state : VMState) = {
-        // a : Int, g : Int
-
+        state.ctxt.get.argvec.get.elem(op.a) = 
+            state.GlobalEnv.get.entry(op.g);
     }
 
     execute(op : OpXferGlobalToReg, state : VMState) = {
-        // r : Int, g : Int
-
+        state.ctxt.get.reg(op.r) = state.GlobalEnv.get.entry(op.g);
     }
 
     execute(op : OpXferArgToArg, state : VMState) = {
-        // d : Int, s : Int
-
+        val argvec = state.ctxt.get.argvec.get;
+        argvec.elem(op.d) = argvec.elem(op.s);
     }
 
     execute(op : OpXferRsltToArg, state : VMState) = {
-        // a : Int
-
+        val ctxt = state.ctxt.get;
+        ctxt.argvec.get.elem(op.a) = ctxt.rslt;
     }
 
     execute(op : OpXferArgToRslt, state : VMState) = {
-        // a : Int
-
+        val ctxt = state.ctxt.get;
+        ctxt.rslt = ctxt.argvec.get.elem(op.a);
     }
 
     execute(op : OpXferRsltToReg, state : VMState) = {
-        // r : Int
-
+        val ctxt = state.ctxt.get;
+        ctxt.reg(op.r) = ctxt.rslt;
     }
 
     execute(op : OpXferRegToRslt, state : VMState) = {
-        // r : Int
-
+        val ctxt = state.ctxt.get;
+        ctxt.rslt = ctxt.reg(op.r);
     }
 
     execute(op : OpXferRsltToDest, state : VMState) = {
-        // v : Int
-            // may set vmErrorFlag
-
+        state.loc.atom = state.code.get.lit(op.v);
+        if (store(state.loc, state.ctxt, state.ctxt.get.rslt)) {
+            state.vmErrorFlag = true;
+        }
     }
 
     execute(op : OpXferSrcToRslt, state : VMState) = {
-        // v : Int
-
+        state.loc.atom = state.code.get.lit(op.v);
+        state.ctxt.get.rslt = fetch(state.loc, state.ctxt);
     }
 
     execute(op : OpIndLitToArg, state : VMState) = {
-        // a : Int, v : Int
-
+        state.ctxt.get.argvec.get.elem(op.a) = state.code.get.lit(op.v);
     }
 
     execute(op : OpIndLitToReg, state : VMState) = {
-        // r : Int, v : Int
-
+        state.ctxt.get.reg(op.r) = state.code.get.lit(op.v);
     }
 
     execute(op : OpIndLitToRslt, state : VMState) = {
-        // v : Int
-
+        state.ctxt.get.rslt = state.code.get.lit(op.v);
     }
 
     execute(op : OpImmediateLitToArg, state : VMState) = {
-        // fixnum: Boolean, v : Int, a : Int
-
+        state.ctxt.get.argvec.get.elem(op.a) = vmLiterals[op.v];
     }
 
     execute(op : OpImmediateLitToReg, state : VMState) = {
-        // fixnum: Boolean, v : Int, r : Int
-
+        state.ctxt.get.reg(op.r) = vmLiterals[op.v];
     }
 
     execute(op : OpUnknown, state : VMState) = {
