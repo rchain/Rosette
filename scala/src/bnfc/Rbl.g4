@@ -32,7 +32,7 @@ expr : method
 
 request : OP expr clause CP ;
 
-send : OP 'send' expr clause CP ;
+send : SEND expr clause CP ;
 
 clause : (expr)*
        | expr* '&' expr ;
@@ -43,7 +43,7 @@ quote : '\'' expr ;
 
 /* Token */
 
-token : (TOKEN | 'label' | 'method' | 'rmethod' | 'proc' | 'block' | 'seq' | 'let' | 'letrec' | 'if' | 'free' | 'goto' | 'set!' ) ;
+token : TOKEN ;
 
 /* String */
 
@@ -60,11 +60,11 @@ id : TOKEN ;
 
 /* Block */
 
-block : OP 'block' expr+ CP ;
+block : BLOCK expr+ CP ;
 
 /* Seq */
 
-seq : OP 'seq' expr+ CP ;
+seq : SEQ expr+ CP ;
 
 /* Message pattern */
 
@@ -73,26 +73,26 @@ pattern : '[' expr* ']'
 
 /* Let */
 
-let : OP 'let' '[' ('[' id expr ']' | '[' pattern expr ']')* ']' expr+ CP ;
+let : LET '[' ('[' id expr ']' | '[' pattern expr ']')* ']' expr+ CP ;
 
-letrec : OP 'letrec' '[' ('[' id expr ']')* ']' expr+ CP ;
+letrec : LETREC '[' ('[' id expr ']')* ']' expr+ CP ;
 
 /* If */
 
-ifexpr : OP 'if' expr expr CP
-       | OP 'if' expr expr expr CP ;
+ifexpr : IF expr expr CP
+       | IF expr expr expr CP ;
 
 /* Method */
 
-method : OP 'method' pattern expr+ CP ;
+method : METHOD pattern expr+ CP ;
 
 /* Reflective method */
 
-rmethod : OP 'rmethod' pattern expr+ CP ;
+rmethod : RMETHOD pattern expr+ CP ;
 
 /* Proc */
 
-proc : OP 'proc' pattern expr CP ;
+proc : PROC pattern expr CP ;
 
 /* Null expression */
 
@@ -100,13 +100,13 @@ proc : OP 'proc' pattern expr CP ;
 
 /* Miscellaneous forms */
 
-free : OP 'free' '[' id* ']' expr+ CP ;
+free : FREE '[' id* ']' expr+ CP ;
 
-gotoexpr : OP 'goto' id CP ;
+gotoexpr : GOTO id CP ;
 
-set : OP 'set!' id expr CP ;
+set : SET id expr CP ;
 
-label : OP 'label' id expr+ CP ;
+label : LABEL id expr+ CP ;
 
 /* Constant */
 
@@ -145,8 +145,34 @@ incompleteio: '#incomplete-io' ; // undocumented
  * LEXER RULES (order matters)
  *------------------------------------------------------------------*/
 
-OP : '(';
-CP : ')';
+SEND : '(' ' '* 'send' ;
+
+BLOCK : '(' ' '* 'block' ;
+
+SEQ : '(' ' '* 'seq' ;
+
+LET : '(' ' '* 'let' ;
+
+LETREC : '(' ' '* 'letrec' ;
+
+IF : '(' ' '* 'if' ;
+
+METHOD : '(' ' '* 'method' ;
+
+RMETHOD : '(' ' '* 'rmethod' ;
+
+PROC : '(' ' '* 'proc' ;
+
+FREE : '(' ' '* 'free' ;
+
+GOTO : '(' ' '* 'goto' ;
+
+SET : '(' ' '* 'set!' ;
+
+LABEL : '(' ' '* 'label' ;
+
+OP : '(' ;
+CP : ')' ;
 
 FLOAT : DIGIT+ '.' DIGIT* | DIGIT* '.' DIGIT+ ;
 
