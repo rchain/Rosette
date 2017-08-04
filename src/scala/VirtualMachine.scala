@@ -46,9 +46,13 @@ object PC {
     def fromInt(i : Int) : PC = {}    
 }
 
-class Tuple extends Ob {
-    
+class Prim extends Ob {}
+
+object Prim {
+    def nthPrim(n : Int) : Option[Prim] = {}
 }
+
+class Tuple extends Ob {}
 
 object Tuple {
     def create(a, b : Option[?]) : Tuple = {}
@@ -59,6 +63,7 @@ class VMState {
     var code : Option[Code];
     var ctxt : Option[Ctxt];
     var debuggingLevel : Int = 0;
+    var loc : Location;
     var pc : PC;
     var sigvec : Int = 0;
     var strandPool : scala.collection.mutable.Stack[Ctxt];
@@ -265,8 +270,22 @@ trait VirtualMachine {
     }
 
     def execute(op : OpApplyPrimTag, state : VMState) = {
-        // unmkv
-        // may set doNextThreadFlag, vmErrorFlag
+        val ctxt = state.ctxt.get;
+        ctxt.nargs = op.m;
+        val prim = Prim.nthPrim(op.k);
+        state.loc.atom = state.code.get.lit(op.v);
+        val result = if { (u) unwindAndApply(prim) }
+                     else { prim.get.dispatchHelper(state.ctxt) };
+        if (result == DEADTHREAD) {
+            state.doNextThreadFlag = true;
+        } else if (result.is(OTsysval)) {
+            handleException(result, op, state.loc);
+            state.doNextThreadFlag = true;
+        } else if (store(state.loc, state.ctxt, result)) {
+            state.vmErrorFlag = true;
+        } else if (op.n) {
+            state.doNextThreadFlag = true;
+        }
     }
 
     def execute(op : OpApplyPrimArg, state : VMState) = {
