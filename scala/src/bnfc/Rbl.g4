@@ -178,23 +178,26 @@ FLOAT : DIGIT+ '.' DIGIT* | DIGIT* '.' DIGIT+ ;
 
 FIXNUM : DIGIT+ ;
 
-CHAR : '#\\' . ;
-
 STRING : '"' ( '\\"' | . )*? '"' ;
 
-ESCAPE : '#\\\\' ('n' | 'r' | 't' | 'f' | 'x' | '\\') ;
+ESCAPE : '#\\\\' ('n' | 'r' | 't' | 'f' | HEX | '\\') ;
 
-TOKEN : (LETTER | DIGIT | SPECIAL_CHAR)+ ;
+fragment HEX : 'x' [\p{Hex_Digit}] [\p{Hex_Digit}] ;
 
-WHITESPACE : [ \r\n\t] + -> channel (HIDDEN);
+// includes '#\ '
+CHAR : '#\\' . ;
 
 DIGIT : '0'..'9';
 
-LETTER : LOWER | UPPER ;
-
-SPECIAL_CHAR : ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '\'' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) ;
-
-LOWER : ('a'..'z') ;
-UPPER : ('A'..'Z') ;
+WHITESPACE : [ \r\n\t] + -> channel (HIDDEN);
 
 COMMENT : ';' .*? '\n' -> skip ;
+
+TOKEN : (LETTER | DIGIT | EXTENDED)+ ;
+
+fragment LETTER : LOWER | UPPER ;
+
+fragment EXTENDED : ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '\'' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) ;
+
+fragment LOWER : ('a'..'z') ;
+fragment UPPER : ('A'..'Z') ;
