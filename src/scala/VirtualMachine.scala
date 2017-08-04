@@ -10,9 +10,10 @@ class Ctxt extends Ob {
     var tag : Location;
     var rslt;
     
-    def parent() : Option[Env] = {}
-    def ret(rslt) : Boolean = {}
-    def scheduleStrand() : Unit = {}
+    def parent() : Option[Env] = {};
+    def reg(regno : Int) = {};
+    def ret(rslt) : Boolean = {};
+    def scheduleStrand() : Unit = {};
 }
 
 object Ctxt extends Ob {
@@ -31,6 +32,7 @@ class Instr extends Ob {
 class Location extends Ob {
     var atom : Option[Ob];
 }
+
 object Location {
     def ArgReg(a : Int) : Option[Location] = {}
     def CtxtReg(r : Int) : Option[Location] = {}
@@ -274,7 +276,7 @@ trait VirtualMachine {
         ctxt.nargs = op.m;
         val prim = Prim.nthPrim(op.k);
         state.loc.atom = state.code.get.lit(op.v);
-        val result = if { (u) unwindAndApply(prim) }
+        val result = if (op.u) { unwindAndApply(prim) }
                      else { prim.get.dispatchHelper(state.ctxt) };
         if (result == DEADTHREAD) {
             state.doNextThreadFlag = true;
@@ -290,17 +292,65 @@ trait VirtualMachine {
 
     def execute(op : OpApplyPrimArg, state : VMState) = {
         // unmka
-        // may set doNextThreadFlag, vmErrorFlag
+        val ctxt = state.ctxt.get;
+        ctxt.nargs = op.m;
+        val prim = Prim.nthPrim(op.k);
+        val argno = op.a;
+        val result = if (op.u) { unwindAndApplyPrim(prim) }
+                     else { prim.get.dispatchHelper(state.ctxt) }
+        if (result == DEADTHREAD) {
+            state.doNextThreadFlag = true;
+        } else if (result.is(OTsysval)) {
+            handleException(result, op, state.loc);
+            state.doNextThreadFlag = true;
+        } else if (argno >= ARG_LIMIT) {
+            state.vmErrorFlag = true;
+        } else {
+            ctxt.argvec.get.elem(argno) = result;
+            if (op.n) {
+                state.doNextThreadFlag = true;
+            }
+        }
     }
 
     def execute(op : OpApplyPrimReg, state : VMState) = {
         // unmkr
-        // may set doNextThreadFlag, vmErrorFlag
+        val ctxt = state.ctxt.get;
+        ctxt.nargs = op.m;
+        val prim = Prim.nthPrim(op.k);
+        val regno = op.r;
+        val result = if (op.u) { unwindAndApplyPrim(prim) }
+                     else { prim.get.dispatchHelper(state.ctxt) }
+        if (result == DEADTHREAD) {
+            state.doNextThreadFlag = true;
+        } else if (result.is(OTsysval)) {
+            handleException(result, op, Location.CtxtReg(regno));
+            state.doNextThreadFlag = true;
+        } else if (argno >= ARG_LIMIT) {
+            state.vmErrorFlag = true;
+        } else {
+            ctxt.reg(regno) = result;
+            if (op.n) {
+                state.doNextThreadFlag = true;
+            }
+        }
     }
 
     def execute(op : OpApplyCmd, state : VMState) = {
         // unmk
-        // may set doNextThreadFlag, vmErrorFlag
+        val ctxt = state.ctxt.get;
+        ctxt.nargs = op.m;
+        val prim = Prim.nthPrim(op.k);
+        val result = if (op.u) { unwindAndApplyPrim(prim) }
+                     else { prim.get.dispatchHelper(state.ctxt) }
+        if (result == DEADTHREAD) {
+            state.doNextThreadFlag = true;
+        } else if (result.is(OTsysval)) {
+            handleException(result, op, Location.CtxtReg(regno));
+            state.doNextThreadFlag = true;
+        } else if (op.n) {
+            state.doNextThreadFlag = true;
+        }
     }
 
     def execute(op : OpRtn, state : VMState) = {
