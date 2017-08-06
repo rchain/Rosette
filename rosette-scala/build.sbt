@@ -9,5 +9,8 @@ lazy val root = (project in file(".")).
       scalafmtOnCompile in Compile := true
     )),
     name := "Rosette",
-    libraryDependencies += scalaTest % Test
+    libraryDependencies ++= Seq(
+      "com.chuusai" %% "shapeless" % "2.3.2",
+      scalaTest % Test
+    )
   )
