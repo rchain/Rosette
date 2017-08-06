@@ -39,7 +39,7 @@ clause : (expr)*
 
 /* Quote */
 
-quote : '\'' expr ;
+quote : '\'' expr | '\'\\' constant;
 
 /* Token */
 
@@ -193,11 +193,11 @@ WHITESPACE : [ \r\n\t] + -> channel (HIDDEN);
 
 COMMENT : ';' .*? '\n' -> skip ;
 
-TOKEN : (LETTER | DIGIT | EXTENDED)+ ;
+TOKEN : (LETTER | DIGIT | EXTENDED) (LETTER | DIGIT | EXTENDED | '\'')* ;
 
 fragment LETTER : LOWER | UPPER ;
 
-fragment EXTENDED : ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '\'' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) ;
+fragment EXTENDED : ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) ;
 
 fragment LOWER : ('a'..'z') ;
 fragment UPPER : ('A'..'Z') ;
