@@ -30,7 +30,7 @@ expr : method
 
 /* Request */
 
-request : OP expr clause CP ;
+request : OP expr clause CP | METHOD clause CP ;
 
 send : SEND expr clause CP ;
 
