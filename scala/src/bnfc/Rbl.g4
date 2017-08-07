@@ -10,6 +10,9 @@ program : expr* EOF ;
 expr : method
      | rmethod
      | quote
+     | free
+     | gotoexpr
+     | set
      | label
      | string
      | tuple
@@ -19,31 +22,33 @@ expr : method
      | letrec
      | ifexpr
      | proc
-     | free
-     | gotoexpr
-     | set
      | constant
      | token
      | id
      | request
      | send ;
 
-/* Request */
+/* Method */
 
-request : OP expr clause CP | METHOD clause CP ;
+method : METHOD pattern expr+ CP ;
 
-send : SEND expr clause CP ;
+/* Reflective method */
 
-clause : (expr)*
-       | expr* '&' expr ;
+rmethod : RMETHOD pattern expr+ CP ;
 
 /* Quote */
 
 quote : '\'' expr | '\'\\' constant;
 
-/* Token */
+/* Miscellaneous forms */
 
-token : TOKEN ;
+free : FREE '[' id* ']' expr+ CP ;
+
+gotoexpr : GOTO id CP ;
+
+set : SET id expr CP ;
+
+label : LABEL id expr+ CP ;
 
 /* String */
 
@@ -54,10 +59,6 @@ string : STRING ;
 tuple : '[' expr* ']'
       | '[' expr* '&' expr ']' ;
 
-/* Identifier */
-
-id : TOKEN ;
-
 /* Block */
 
 block : BLOCK expr+ CP ;
@@ -65,11 +66,6 @@ block : BLOCK expr+ CP ;
 /* Seq */
 
 seq : SEQ expr+ CP ;
-
-/* Message pattern */
-
-pattern : '[' expr* ']'
-        | '[' expr* '&' expr ']' ;
 
 /* Let */
 
@@ -82,31 +78,9 @@ letrec : LETREC '[' ('[' id expr ']')* ']' expr+ CP ;
 ifexpr : IF expr expr CP
        | IF expr expr expr CP ;
 
-/* Method */
-
-method : METHOD pattern expr+ CP ;
-
-/* Reflective method */
-
-rmethod : RMETHOD pattern expr+ CP ;
-
 /* Proc */
 
 proc : PROC pattern expr CP ;
-
-/* Null expression */
-
-/* ??? */
-
-/* Miscellaneous forms */
-
-free : FREE '[' id* ']' expr+ CP ;
-
-gotoexpr : GOTO id CP ;
-
-set : SET id expr CP ;
-
-label : LABEL id expr+ CP ;
 
 /* Constant */
 
@@ -140,6 +114,28 @@ rniv : '#niv' ;
 readerror : '#read-error' ; // undocumented
 
 incompleteio: '#incomplete-io' ; // undocumented
+
+/* Token */
+
+token : TOKEN ;
+
+/* Identifier */
+
+id : TOKEN ;
+
+/* Request */
+
+request : OP expr clause CP | METHOD clause CP ;
+
+send : SEND expr clause CP ;
+
+clause : (expr)*
+       | expr* '&' expr ;
+
+/* Message pattern */
+
+pattern : '[' expr* ']'
+        | '[' expr* '&' expr ']' ;
 
 /*------------------------------------------------------------------
  * LEXER RULES (order matters)
