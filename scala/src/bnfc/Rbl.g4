@@ -117,11 +117,11 @@ incompleteio: '#incomplete-io' ; // undocumented
 
 /* Token */
 
-token : TOKEN ;
+token : ATOM ;
 
 /* Identifier */
 
-id : TOKEN ;
+id : ATOM ;
 
 /* Request */
 
@@ -189,7 +189,7 @@ WHITESPACE : [ \r\n\t] + -> channel (HIDDEN);
 
 COMMENT : ';' .*? '\n' -> skip ;
 
-TOKEN : (LETTER | DIGIT | EXTENDED) (LETTER | DIGIT | EXTENDED | '\'')* ;
+ATOM : (LETTER | DIGIT | EXTENDED) (LETTER | DIGIT | EXTENDED | '\'')* ;
 
 fragment LETTER : LOWER | UPPER ;
 

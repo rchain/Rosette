@@ -5,8 +5,8 @@ ERMethod.              Expr ::= RMethod ;
 EQuote.                Expr ::= Quote ;
 EFree.                 Expr ::= Free ;
 EGoto.                 Expr ::= GotoExpr ;
-ELabel.                Expr ::= Label ;
 ESet.                  Expr ::= Set ;
+ELabel.                Expr ::= Label ;
 EString.               Expr ::= RString ;
 ETuple.                Expr ::= Tuple ;
 EBlock.                Expr ::= Block ;
@@ -17,34 +17,27 @@ EIf.                   Expr ::= IfExpr ;
 EProc.                 Expr ::= Proc ;
 EConstant.             Expr ::= Constant ;
 EId.                   Expr ::= Id ;
-ELexeme.               Expr ::= Lexeme ;
-ERequest.              Expr ::= "(" Expr Clause ")" ;
-ESend.                 Expr ::= "(" "send" Expr Clause ")" ;
+EToken.                Expr ::= TokenExpr ;
+ERequest.              Expr ::= Request ;
 
 terminator Expr "" ;
 
-
--- Message pattern
-
-Pattern.               Pattern ::= "[" [Expr] "]" ;
-PatternAnd.            Pattern ::= "[" [Expr] "&" Expr "]" ;
-
 -- Method
 
-Method.                Method ::= "(" "method" Pattern Expr [Expr] ")" ;
+Method.                Method ::= TMethod Pattern Expr [Expr] CP ;
 
 -- Reflective method
 
-RMethod.               RMethod ::= "(" "rmethod" Pattern Expr [Expr] ")" ;
+RMethod.               RMethod ::= TRmethod Pattern Expr [Expr] CP ;
 
 -- Quote
 
 Quote.                 Quote ::= "'" Expr ;
-EscapedQuote.          Quote ::= "'\\" Expr ;
+EscapedQuote.          Quote ::= "'\\" Constant ;
 
 -- String
 
-RString.               RString ::= StrLexer ;
+RString.               RString ::= TString ;
 
 -- Tuple
 
@@ -53,11 +46,11 @@ TupleAnd.              Tuple ::= "[" [Expr] "&" Expr "]" ;
 
 -- Block
 
-Block.                 Block ::= "(" "block" Expr [Expr] ")" ;
+Block.                 Block ::= TBlock Expr [Expr] CP ;
 
 -- Seq
 
-Seq.                   Seq ::= "(" "seq" Expr [Expr] ")" ;
+Seq.                   Seq ::= TSeq Expr [Expr] CP ;
 
 -- Let
 
@@ -65,32 +58,32 @@ LetHeadId.             LetHead ::= "[" Id Expr "]" ;
 LetHeadPtrn.           LetHead ::= "[" Pattern Expr "]" ;
 LetRecHead.            LetRecHead ::= "[" Id Expr "]" ;
 
-Let.                   Let ::= "(" "let" "[" [LetHead] "]" Expr [Expr] ")" ;
+Let.                   Let ::= TLet "[" [LetHead] "]" Expr [Expr] CP ;
 
-LetRec.                LetRec ::= "(" "letrec" "[" [LetRecHead] "]" Expr [Expr] ")" ;
+LetRec.                LetRec ::= TLetRec "[" [LetRecHead] "]" Expr [Expr] CP ;
 
 terminator LetHead "" ;
 terminator LetRecHead "" ;
 
 -- If
 
-IfExpr.                IfExpr ::= "(" "if" Expr Expr ")" ;
+IfExpr.                IfExpr ::= TIf Expr Expr CP ;
 
-IfExprElse.            IfExpr ::= "(" "if" Expr Expr Expr ")" ;
+IfExprElse.            IfExpr ::= TIf Expr Expr Expr CP ;
 
 -- Proc
 
-Proc.                  Proc ::= "(" "proc" Pattern Expr ")" ;
+Proc.                  Proc ::= TProc Pattern Expr CP ;
 
 -- Miscellaneous forms
 
-Free.                  Free ::= "(" "free" "[" [Id] "]" Expr [Expr] ")" ;
+Free.                  Free ::= TFree "[" [Id] "]" Expr [Expr] CP ;
 
-GotoExpr.              GotoExpr ::= "(" "goto" Id ")" ;
+GotoExpr.              GotoExpr ::= TGoto Id CP ;
 
-Set.                   Set ::= "(" "set!" Id Expr ")" ;
+Set.                   Set ::= TSet Id Expr CP ;
 
-Label.                 Label ::= "(" "label" Id Expr [Expr] ")" ;
+Label.                 Label ::= TLabel Id Expr [Expr] CP ;
 
 -- Constant
 
@@ -99,13 +92,23 @@ CFalse.                CBool ::= "#f" ;
 CBoolean.              Constant ::= CBool ;
 CFixnum.               Constant ::= Integer ;
 CFloat.                Constant ::= Double ;
-CChar.                 Constant ::= RChar ;
-CCharEscaped.          Constant ::= REscapeChar ;
+CChar.                 Constant ::= TChar ;
+CCharEscaped.          Constant ::= TEscapeChar ;
 CAbsent.               Constant ::= "#absent" ;
 CEof.                  Constant ::= "#eof" ;
 CNiv.                  Constant ::= "#niv" ;
 CReadError.            Constant ::= "#read-error" ;
 CIncompleteIo.         Constant ::= "#incomplete-io" ;
+
+-- Request
+
+Request.               Request ::= OP Expr Clause CP ;
+RequestMethod.         Request ::= TMethod Clause CP ;
+
+Send.                  Request ::= TSend Expr Clause CP ;
+
+EClause.               Clause ::= [Expr] ;
+EClauseAnd.            Clause ::= [Expr] "&" Expr ;
 
 -- Id
 
@@ -113,35 +116,53 @@ Id.                    Id ::= Atom ;
 
 terminator Id "" ;
 
--- Lexeme
+-- Atom
 
-Lexeme.                Lexeme ::= Atom ;
-LLabel.                Lexeme ::= "label" ;
-LMethod.               Lexeme ::= "method" ;
-LRMethod.              Lexeme ::= "rmethod" ;
-LProc.                 Lexeme ::= "proc" ;
-LBlock.                Lexeme ::= "block" ;
-LSeq.                  Lexeme ::= "seq" ;
-LLet.                  Lexeme ::= "let" ;
-LLetRec.               Lexeme ::= "letrec" ;
-LIf.                   Lexeme ::= "if" ;
-LFree.                 Lexeme ::= "free" ;
-LGoto.                 Lexeme ::= "goto" ;
-LSet.                  Lexeme ::= "set!" ;
+TokenExpr.             TokenExpr ::=  Atom ;
 
--- Request
+-- Message pattern
 
-EClause.               Clause ::= [Expr] ;
-EClauseAnd.            Clause ::= [Expr] "&" Expr ;
+Pattern.               Pattern ::= "[" [Expr] "]" ;
+PatternAnd.            Pattern ::= "[" [Expr] "&" Expr "]" ;
 
--- Lexer
+-- Lexer rules (order matters)
 
-token StrLexer ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+token TSend ( '(' ' '* {"send"} ) ;
 
-token RChar ( {"#\\"} char ) ;
+token TBlock ( '(' ' '* {"block"} ) ;
 
-token REscapeChar ( {"#\\\\"} ('n' | 'r' | 't' | 'f' | 'x' | '\\') ) ;
+token TSeq ( '(' ' '* {"seq"} ) ;
 
-token Atom ( (letter | ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '&' | '.' | '@' | ':' | ',' | '`') ) (letter | digit | ('+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '\'' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) )*) ;
+token TLet ( '(' ' '* {"let"} ) ;
+
+token TLetRec ( '(' ' '* {"letrec"} ) ;
+
+token TIf ( '(' ' '* {"if"} ) ;
+
+token TMethod ( '(' ' '* {"method"} ) ;
+
+token TRmethod ( '(' ' '* {"rmethod"} ) ;
+
+token TProc ( '(' ' '* {"proc"} ) ;
+
+token TFree ( '(' ' '* {"free"} ) ;
+
+token TGoto ( '(' ' '* {"goto"} ) ;
+
+token TSet ( '(' ' '* {"set!"} ) ;
+
+token TLabel ( '(' ' '* {"label"} ) ;
+
+token OP '(' ;
+
+token CP ')' ;
+
+token TString ( '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ) ;
+
+token TChar ( {"#\\"} char ) ;
+
+token TEscapeChar ( {"#\\\\"} ('n' | 'r' | 't' | 'f' | '\\' | 'x' ["0123456789abcdefABCDEF"] ["0123456789abcdefABCDEF"] ) ) ;
+
+token Atom ( (letter | digit | '+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '&' | ':' | '\\' | '.' | '@' | ',' | '`' ) (letter | digit | '+' | '-' | '*' | '/' | '<' | '=' | '>' | '!' | '?' | '$' | '%' | '_' | '~' | '^' | '&' | ':' | '\\' | '.' | '@' | ',' | '`'| '\'')* ) ;
 
 comment ";" ;
