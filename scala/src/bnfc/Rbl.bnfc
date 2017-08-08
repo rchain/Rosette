@@ -103,7 +103,15 @@ CIncompleteIo.         Constant ::= "#incomplete-io" ;
 -- Request
 
 Request.               Request ::= OP Expr Clause CP ;
+RequestProc.           Request ::= TProc Clause CP ;
+RequestFree.           Request ::= TFree Clause CP ;
+RequestGoto.           Request ::= TGoto Clause CP ;
+RequestSet.            Request ::= TSet Clause CP ;
+RequestLabel.          Request ::= TLabel Clause CP ;
+RequestLet.            Request ::= TLet Clause CP ;
+RequestLetRec.         Request ::= TLetRec Clause CP ;
 RequestMethod.         Request ::= TMethod Clause CP ;
+RequestRmethod.        Request ::= TRmethod Clause CP ;
 
 Send.                  Request ::= TSend Expr Clause CP ;
 

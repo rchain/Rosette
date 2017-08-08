@@ -125,7 +125,16 @@ id : ATOM ;
 
 /* Request */
 
-request : OP expr clause CP | METHOD clause CP ;
+request : OP expr clause CP
+        | PROC clause CP
+        | FREE clause CP
+        | GOTO clause CP
+        | SET clause CP
+        | LABEL clause CP
+        | LET clause CP
+        | LETREC clause CP
+        | METHOD clause CP
+        | RMETHOD clause CP ;
 
 send : SEND expr clause CP ;
 
