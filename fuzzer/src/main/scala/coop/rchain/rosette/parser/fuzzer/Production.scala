@@ -157,6 +157,18 @@ object Production {
               List(Terminal(Fix("[ ")),
                    randomConstant()(rnd.nextLong),
                    Terminal(Fix(" ]")))
+            case LetHead =>
+              List(Terminal(Fix("[ ")),
+                   Terminal(Id),
+                   Terminal(Fix(" ")),
+                   randomConstant()(rnd.nextLong),
+                   Terminal(Fix(" ]")))
+            case LetRecHead =>
+              List(Terminal(Fix("[ ")),
+                   Terminal(Id),
+                   Terminal(Fix(" ")),
+                   randomConstant()(rnd.nextLong),
+                   Terminal(Fix(" ]")))
             case _ => List(randomConstant()(rnd.nextLong))
           }
         case t: Terminal => List(t)
