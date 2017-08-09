@@ -28,13 +28,18 @@ expr : method
      | request
      | send ;
 
+/* Distinguish between method/rmethod expressions and method/rmethod as used in defActor and similar */
+
+mpattern: expr* ']'
+        | expr* '&' expr ']' ;
+
 /* Method */
 
-method : METHOD pattern expr+ CP ;
+method : METHOD mpattern expr+ CP ;
 
 /* Reflective method */
 
-rmethod : RMETHOD pattern expr+ CP ;
+rmethod : RMETHOD mpattern expr+ CP ;
 
 /* Quote */
 
@@ -125,20 +130,11 @@ id : ATOM ;
 
 /* Request */
 
-request : OP expr clause CP
-        | PROC clause CP
-        | FREE clause CP
-        | GOTO clause CP
-        | SET clause CP
-        | LABEL clause CP
-        | LET clause CP
-        | LETREC clause CP
-        | METHOD clause CP
-        | RMETHOD clause CP ;
+request : OP expr clause CP ;
 
 send : SEND expr clause CP ;
 
-clause : (expr)*
+clause : expr*
        | expr* '&' expr ;
 
 /* Message pattern */
@@ -150,31 +146,31 @@ pattern : '[' expr* ']'
  * LEXER RULES (order matters)
  *------------------------------------------------------------------*/
 
-SEND : '(' ' '* 'send' ;
+METHOD : '(' ' '* 'method ' ' '* '[' ;
 
-BLOCK : '(' ' '* 'block' ;
+RMETHOD : '(' ' '* 'rmethod ' ' '* '[' ;
 
-SEQ : '(' ' '* 'seq' ;
+SEND : '(' ' '* 'send ' ;
 
-LET : '(' ' '* 'let' ;
+LET : '(' ' '* 'let ' ;
 
-LETREC : '(' ' '* 'letrec' ;
+LETREC : '(' ' '* 'letrec ' ;
 
-IF : '(' ' '* 'if' ;
+BLOCK : '(' ' '* 'block ' ;
 
-METHOD : '(' ' '* 'method' ;
+SEQ : '(' ' '* 'seq ' ;
 
-RMETHOD : '(' ' '* 'rmethod' ;
+IF : '(' ' '* 'if ' ;
 
-PROC : '(' ' '* 'proc' ;
+PROC : '(' ' '* 'proc ' ;
 
-FREE : '(' ' '* 'free' ;
+FREE : '(' ' '* 'free ' ;
 
-GOTO : '(' ' '* 'goto' ;
+GOTO : '(' ' '* 'goto ' ;
 
-SET : '(' ' '* 'set!' ;
+SET : '(' ' '* 'set! ' ;
 
-LABEL : '(' ' '* 'label' ;
+LABEL : '(' ' '* 'label ' ;
 
 OP : '(' ;
 CP : ')' ;

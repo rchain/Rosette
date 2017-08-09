@@ -22,13 +22,18 @@ ERequest.              Expr ::= Request ;
 
 terminator Expr "" ;
 
+-- Distinguish between method expressions and method as used in defActor and similar
+
+MPattern.              MPattern ::= [Expr] "]" ;
+MPatternAnd.           MPattern ::= [Expr] "&" Expr "]" ;
+
 -- Method
 
-Method.                Method ::= TMethod Pattern Expr [Expr] CP ;
+Method.                Method ::= TMethod MPattern Expr [Expr] CP ;
 
 -- Reflective method
 
-RMethod.               RMethod ::= TRmethod Pattern Expr [Expr] CP ;
+RMethod.               RMethod ::= TRmethod MPattern Expr [Expr] CP ;
 
 -- Quote
 
@@ -103,15 +108,6 @@ CIncompleteIo.         Constant ::= "#incomplete-io" ;
 -- Request
 
 Request.               Request ::= OP Expr Clause CP ;
-RequestProc.           Request ::= TProc Clause CP ;
-RequestFree.           Request ::= TFree Clause CP ;
-RequestGoto.           Request ::= TGoto Clause CP ;
-RequestSet.            Request ::= TSet Clause CP ;
-RequestLabel.          Request ::= TLabel Clause CP ;
-RequestLet.            Request ::= TLet Clause CP ;
-RequestLetRec.         Request ::= TLetRec Clause CP ;
-RequestMethod.         Request ::= TMethod Clause CP ;
-RequestRmethod.        Request ::= TRmethod Clause CP ;
 
 Send.                  Request ::= TSend Expr Clause CP ;
 
@@ -135,31 +131,31 @@ PatternAnd.            Pattern ::= "[" [Expr] "&" Expr "]" ;
 
 -- Lexer rules (order matters)
 
-token TSend ( '(' ' '* {"send"} ) ;
+token TSend ( '(' ' '* {"send "} ) ;
 
-token TBlock ( '(' ' '* {"block"} ) ;
+token TBlock ( '(' ' '* {"block "} ) ;
 
-token TSeq ( '(' ' '* {"seq"} ) ;
+token TSeq ( '(' ' '* {"seq "} ) ;
 
-token TLet ( '(' ' '* {"let"} ) ;
+token TLet ( '(' ' '* {"let "} ) ;
 
-token TLetRec ( '(' ' '* {"letrec"} ) ;
+token TLetRec ( '(' ' '* {"letrec "} ) ;
 
-token TIf ( '(' ' '* {"if"} ) ;
+token TIf ( '(' ' '* {"if "} ) ;
 
-token TMethod ( '(' ' '* {"method"} ) ;
+token TMethod ( '(' ' '* {"method "} ' '* '[' ) ;
 
-token TRmethod ( '(' ' '* {"rmethod"} ) ;
+token TRmethod ( '(' ' '* {"rmethod "} ' '* '[' ) ;
 
-token TProc ( '(' ' '* {"proc"} ) ;
+token TProc ( '(' ' '* {"proc "} ) ;
 
-token TFree ( '(' ' '* {"free"} ) ;
+token TFree ( '(' ' '* {"free "} ) ;
 
-token TGoto ( '(' ' '* {"goto"} ) ;
+token TGoto ( '(' ' '* {"goto "} ) ;
 
-token TSet ( '(' ' '* {"set!"} ) ;
+token TSet ( '(' ' '* {"set! "} ) ;
 
-token TLabel ( '(' ' '* {"label"} ) ;
+token TLabel ( '(' ' '* {"label "} ) ;
 
 token OP '(' ;
 
