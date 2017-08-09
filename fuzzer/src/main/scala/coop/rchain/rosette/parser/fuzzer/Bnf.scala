@@ -37,7 +37,7 @@ object Bnf {
               (Rhs(List(Sym(Nonterminal(SetExpr), Once))), 1),
               (Rhs(List(Sym(Nonterminal(Constant), Once))), 1),
               (Rhs(List(Sym(Nonterminal(Request), Once))), 1),
-              (Rhs(List(Sym(Nonterminal(Send), Star))), 1),
+              (Rhs(List(Sym(Nonterminal(Send), Once))), 1),
             )
           ))
       ),
