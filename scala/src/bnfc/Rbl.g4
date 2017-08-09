@@ -12,10 +12,10 @@ expr : method
      | quote
      | free
      | gotoexpr
-     | set
+     | setexpr
      | label
      | string
-     | tuple
+     | tupleexpr
      | block
      | seq
      | let
@@ -24,7 +24,7 @@ expr : method
      | proc
      | constant
      | token
-     | id
+     | idtoken
      | request
      | send ;
 
@@ -47,13 +47,13 @@ quote : '\'' expr | '\'\\' constant;
 
 /* Miscellaneous forms */
 
-free : FREE '[' id* ']' expr+ CP ;
+free : FREE '[' idtoken* ']' expr+ CP ;
 
-gotoexpr : GOTO id CP ;
+gotoexpr : GOTO idtoken CP ;
 
-set : SET id expr CP ;
+setexpr : SET idtoken expr CP ;
 
-label : LABEL id expr+ CP ;
+label : LABEL idtoken expr+ CP ;
 
 /* String */
 
@@ -61,7 +61,7 @@ string : STRING ;
 
 /* Tuple */
 
-tuple : '[' expr* ']'
+tupleexpr : '[' expr* ']'
       | '[' expr* '&' expr ']' ;
 
 /* Block */
@@ -74,9 +74,9 @@ seq : SEQ expr+ CP ;
 
 /* Let */
 
-let : LET '[' ('[' id expr ']' | '[' pattern expr ']')* ']' expr+ CP ;
+let : LET '[' ('[' idtoken expr ']' | '[' pattern expr ']')* ']' expr+ CP ;
 
-letrec : LETREC '[' ('[' id expr ']')* ']' expr+ CP ;
+letrec : LETREC '[' ('[' idtoken expr ']')* ']' expr+ CP ;
 
 /* If */
 
@@ -126,7 +126,7 @@ token : ATOM ;
 
 /* Identifier */
 
-id : ATOM ;
+idtoken : ATOM ;
 
 /* Request */
 
