@@ -181,7 +181,7 @@ FIXNUM : DIGIT+ ;
 
 STRING : '"' ( '\\"' | . )*? '"' ;
 
-ESCAPE : '#\\\\' ('n' | 'r' | 't' | 'f' | HEX | '\\') ;
+ESCAPE : '#\\\\' ('n' | 'r' | 't' | 'f' | '"' | '\\' | HEX) ;
 
 fragment HEX : 'x' [\p{Hex_Digit}] [\p{Hex_Digit}] ;
 
