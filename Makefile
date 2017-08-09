@@ -1,4 +1,4 @@
-# Mode: -*- TEXT -*-
+# Mode: -*- MAKEFILE -*-
 # @BC
 #		                Copyright (c) 1996
 #	                      by Rosette WebWorks Inc.
@@ -25,3 +25,10 @@
 all:
 	$(MAKE) -C src
 	$(MAKE) -C rbl
+
+
+clean:
+	rm -f src/*.o
+	rm -f bin/boot-ess
+
+.PHONY: all clean

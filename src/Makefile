@@ -1,4 +1,4 @@
-# Mode: -*- TEXT -*-
+# Mode: -*- MAKEFILE -*-
 # @BC
 #		                Copyright (c) 1996
 #	                      by Rosette WebWorks Inc.
@@ -24,10 +24,10 @@
 
 ARCH		= linux
 
-CPPFLAGS	= -I ../h -I ../h/sys -DARCH_INC=\"$(ARCH).h\"
+CPPFLAGS	= -I ../h -I ../h/sys -DARCH_INC=\"$(ARCH).h\" -m32
 
 #LDCC		= gcc -g $(W_STATIC) -DGCC27X -lm
-LDCC		= g++ -g $(W_STATIC) -DGCC27X -lm
+LDCC		= g++ -g $(W_STATIC) -DGCC27X -lm -m32
 
 OBJS		= Actor.o RblAtom.o BigBang.o BinaryOb.o Code.o CommandLine.o \
 		Compile.o Cstruct.o ForeignFun.o Ctxt.o Dynload.o Dump-world.o \
