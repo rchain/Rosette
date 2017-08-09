@@ -83,37 +83,34 @@ class VMState {
 
 trait VirtualMachine {
 
-  def executeStream(
-                     opCodes : Stream[Op],
-                     state : VMState
-                   ) : Unit {
+  def executeStream(opCodes : Stream[Op], state : VMState) : Unit {
     breakable {
-    for (op <- opCodes) {
-    executeDispatch(op, state)
-    if (state.doXmitFlag) {
-    // may set doNextThreadFlag
-  }
-    if (state.doRtnFlag) {
-    if (state.ctxt.get.ret(state.ctxt.get.rslt)) {
-    state.vmErrorFlag = true
-  } else if (state.doRtnData) {
-    state.doNextThreadFlag = true
-  }
-  }
-    if (vmErrorFlag) {
-    handleVirtualMachineError()
-    state.doNextThreadFlag = true
-  }
-    if (doNextThreadFlag) {
-    if (getNextStrand()) {
-    state.nextOpFlag = false
-  }
-  }
-    if (state.exitFlag) {
-    break
-  }
-  }
-  }
+      for (op <- opCodes) {
+        executeDispatch(op, state)
+        if (state.doXmitFlag) {
+          // may set doNextThreadFlag
+        }
+        if (state.doRtnFlag) {
+          if (state.ctxt.get.ret(state.ctxt.get.rslt)) {
+            state.vmErrorFlag = true
+          } else if (state.doRtnData) {
+            state.doNextThreadFlag = true
+          }
+        }
+        if (vmErrorFlag) {
+          handleVirtualMachineError()
+          state.doNextThreadFlag = true
+        }
+        if (doNextThreadFlag) {
+          if (getNextStrand()) {
+            state.nextOpFlag = false
+          }
+        }
+        if (state.exitFlag) {
+          break
+        }
+      }
+    }
   }
 
   def executeDispatch(op : Op, state: VMState) {
