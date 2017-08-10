@@ -1,9 +1,9 @@
 package coop.rchain.rosette
 
 sealed trait Op
-case object OpHalt extends Op
-case object OpPush extends Op
-case object OpPop extends Op
+case class OpHalt() extends Op
+case class OpPush() extends Op
+case class OpPop() extends Op
 case class OpNargs(n: Int) extends Op
 case class OpAlloc(n: Int) extends Op
 case class OpPushAlloc(n: Int) extends Op
@@ -30,8 +30,8 @@ case class OpRtnArg(n: Boolean, a: Int) extends Op
 case class OpRtnReg(n: Boolean, r: Int) extends Op
 case class OpRtn(n: Boolean) extends Op
 case class OpUpcallRtn(n: Boolean, v: Int) extends Op
-case object OpResume extends Op
-case object OpNxt extends Op
+case class OpResume() extends Op
+case class OpNxt() extends Op
 case class OpJmp(n: Boolean) extends Op
 case class OpJmpFalse(n: Boolean) extends Op
 case class OpJmpCut(n: Boolean, m: Int) extends Op
@@ -53,4 +53,4 @@ case class OpIndLitToReg(r: Int, v: Int) extends Op
 case class OpIndLitToRslt(v: Int) extends Op
 case class OpImmediateLitToArg(v: Int, a: Int) extends Op
 case class OpImmediateLitToReg(v: Int, r: Int) extends Op
-case object OpUnknown extends Op
+case class OpUnknown() extends Op
