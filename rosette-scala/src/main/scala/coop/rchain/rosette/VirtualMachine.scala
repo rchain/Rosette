@@ -1,86 +1,5 @@
 package coop.rchain.rosette
 
-class Code extends Ob {
-  def lit(l : Int) : Option[Ob] = {}
-}
-
-class Ctxt extends Ob {
-  var argvec : Tuple
-  var ctxt : Option[Ctxt] = None
-  var nargs : Int
-  var outstanding : Int
-  var tag : Location
-  var rslt
-
-  def parent() : Option[Env] = {}
-  def reg(regno : Int) = {}
-  def ret(rslt) : Boolean = {}
-  def scheduleStrand() : Unit = {}
-}
-
-object Ctxt extends Ob {
-  def create(a, ctxt : Ctxt) : Option[Ctxt] = {}
-}
-
-class Env extends Ob {
-  def parent() : Option[Env] = {}
-}
-
-class Instr extends Ob {
-  var opcode : Op
-  var args : List[Int] // Covers 16-bit args; may want 64-bit ones eventually
-}
-
-class Location extends Ob {
-  var atom : Option[Ob]
-}
-
-object Location {
-  def ArgReg(a : Int) : Option[Location] = {}
-  def CtxtReg(r : Int) : Option[Location] = {}
-}
-
-class Ob {}
-
-class PC extends Ob {
-  def fetch() : Instr = {}
-}
-
-object PC {
-  def fromInt(i : Int) : PC = {}
-}
-
-class Prim extends Ob {}
-
-object Prim {
-  def nthPrim(n : Int) : Option[Prim] = {}
-}
-
-class Tuple extends Ob {}
-
-object Tuple {
-  def create(a, b : Option[?]) : Tuple = {}
-}
-
-class VMState {
-  var bytecodes : List[Int]
-  var code : Option[Code]
-  var ctxt : Option[Ctxt]
-  var debuggingLevel : Int = 0
-  var loc : Location
-  var pc : PC
-  var sigvec : Int = 0
-  var strandPool : scala.collection.mutable.Stack[Ctxt]
-
-  var nextOpFlag : Boolean = true
-  var doXmitFlag : Boolean = false
-  var xmitData : (Boolean, Boolean) = (false, false)
-  var doRtnFlag : Boolean = false
-  var doNextThread : Boolean = false
-  var vmErrorFlag : Boolean = false
-  var exitFlag : Boolean = false
-}
-
 trait VirtualMachine {
 
   def executeStream(opCodes : Stream[Op], state : VMState) : Unit {
@@ -427,6 +346,7 @@ trait VirtualMachine {
     // may set doNextThreadFlag
   }
 
+  /*
   execute(op : OpXferLexToArg, state : VMState) = {
     // i : Boolean, l : Int, o : Int, a : Int
 
@@ -507,4 +427,5 @@ trait VirtualMachine {
     //
     doNextThreadFlag = true
   }
+  */
 }
