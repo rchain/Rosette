@@ -1,6 +1,3 @@
 package coop.rchain.rosette
 
-class Ob {
-
-}
-
+class Ob {}

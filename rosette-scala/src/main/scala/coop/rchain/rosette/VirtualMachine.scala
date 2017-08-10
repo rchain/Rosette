@@ -2,107 +2,123 @@ package coop.rchain.rosette
 
 trait VirtualMachine {
 
-  def executeStream(opCodes : Stream[Op], state : VMState) : Unit {
-    breakable {
-      for (op <- opCodes) {
-        executeDispatch(op, state)
-        if (state.doXmitFlag) {
-          // may set doNextThreadFlag
-        }
-        if (state.doRtnFlag) {
-          if (state.ctxt.get.ret(state.ctxt.get.rslt)) {
-            state.vmErrorFlag = true
-          } else if (state.doRtnData) {
-            state.doNextThreadFlag = true
-          }
-        }
-        if (vmErrorFlag) {
-          handleVirtualMachineError()
-          state.doNextThreadFlag = true
-        }
-        if (doNextThreadFlag) {
-          if (getNextStrand()) {
-            state.nextOpFlag = false
-          }
-        }
-        if (state.exitFlag) {
-          break
-        }
-      }
+  def executeSeq(opCodes: Seq[Op], state: VMState): VMState = {
+    var pc = 0
+    var exit = false
+    var currentState = state
+
+    while (pc < opCodes.size && !exit) {
+      val op = opCodes(pc)
+      currentState = modifyFlags(executeDispatch(op, state))
+
+      pc = currentState.pc.relative
+
+      if (currentState.exitFlag) exit = true
     }
+
+    currentState
   }
 
-  def executeDispatch(op : Op, state: VMState) {
-    match op {
-      case o : OpHalt => execute(o, state)
-      case o : OpPush => execute(o, state)
-      case o : OpPop => execute(o, state)
-      case o : OpNargs => execute(o, state)
-      case o : OpAlloc => execute(o, state)
-      case o : OpPushAlloc => execute(o, state)
-      case o : OpExtend => execute(o, state)
-      case o : OpOutstanding => execute(o, state)
-      case o : OpFork => execute(o, state)
-      case o : OpXmitTag => execute(o, state)
-      case o : OpXmitArg => execute(o, state)
-      case o : OpXmitReg => execute(o, state)
-      case o : OpXmit => execute(o, state)
-      case o : OpXmitTagXtnd => execute(o, state)
-      case o : OpXmitArgXtnd => execute(o, state)
-      case o : OpXmitRegXtnd => execute(o, state)
-      case o : OpSend => execute(o, state)
-      case o : OpApplyPrimTag => execute(o, state)
-      case o : OpApplyPrimArg => execute(o, state)
-      case o : OpApplyPrimReg => execute(o, state)
-      case o : OpApplyCmd => execute(o, state)
-      case o : OpRtnTag => execute(o, state)
-      case o : OpRtnArg => execute(o, state)
-      case o : OpRtnReg => execute(o, state)
-      case o : OpRtn => execute(o, state)
-      case o : OpUpcallRtn => execute(o, state)
-      case o : OpResume => execute(o, state)
-      case o : OpNxt => execute(o, state)
-      case o : OpJmp => execute(o, state)
-      case o : OpJmpFalse => execute(o, state)
-      case o : OpJmpCut => execute(o, state)
-      case o : OpLookupToArg => execute(o, state)
-      case o : OpLookupToReg => execute(o, state)
-      case o : OpXferLexToArg => execute(o, state)
-      case o : OpXferLexToReg => execute(o, state)
-      case o : OpXferGlobalToArg => execute(o, state)
-      case o : OpXferGlobalToReg => execute(o, state)
-      case o : OpXferArgToArg => execute(o, state)
-      case o : OpXferRsltToArg => execute(o, state)
-      case o : OpXferArgToRslt => execute(o, state)
-      case o : OpXferRsltToReg => execute(o, state)
-      case o : OpXferRegToRslt => execute(o, state)
-      case o : OpXferRsltToDest => execute(o, state)
-      case o : OpXferSrcToRslt => execute(o, state)
-      case o : OpIndLitToArg => execute(o, state)
-      case o : OpIndLitToReg => execute(o, state)
-      case o : OpIndLitToRslt => execute(o, state)
-      case o : OpImmediateLitToArg => execute(o, state)
-      case o : OpImmediateLitToReg => execute(o, state)
-      case o : OpUnknown => execute(o, state)
+  def modifyFlags(state: VMState): VMState = {
+    var mState = state
+
+    if (mState.doXmitFlag) {
+      // may set doNextThreadFlag
     }
+
+    if (mState.doRtnFlag) {
+      //if (mState.ctxt.get.ret(mState.ctxt.get.rslt)) {
+      //  mState = mState.set(_ >> 'vmErrorFlag)(true)
+      //} else if (mState.doRtnFlag) {
+      //  mState = mState.set(_ >> 'doNextThreadFlag)(true)
+      //}
+    }
+
+    if (mState.vmErrorFlag) {
+      //handleVirtualMachineError()
+      mState = mState.set(_ >> 'doNextThreadFlag)(true)
+    }
+
+    if (mState.doNextThreadFlag) {
+      //if (getNextStrand()) {
+      //  tmpState = tmpState.set(_ >> 'nextOpFlag)(false)
+      //}
+    }
+
+    mState
   }
 
-  def execute(op : OpHalt, state : VMState) = {
-    state.exitFlag = true
-  }
+  def executeDispatch(op: Op, state: VMState): VMState =
+    op match {
+      case o: OpHalt => execute(o, state)
+      case o: OpPush => execute(o, state)
+      case o: OpPop => execute(o, state)
+      case o: OpNargs => execute(o, state)
+      /*
+      case o: OpAlloc => execute(o, state)
+      case o: OpPushAlloc => execute(o, state)
+      case o: OpExtend => execute(o, state)
+      case o: OpOutstanding => execute(o, state)
+      case o: OpFork => execute(o, state)
+      case o: OpXmitTag => execute(o, state)
+      case o: OpXmitArg => execute(o, state)
+      case o: OpXmitReg => execute(o, state)
+      case o: OpXmit => execute(o, state)
+      case o: OpXmitTagXtnd => execute(o, state)
+      case o: OpXmitArgXtnd => execute(o, state)
+      case o: OpXmitRegXtnd => execute(o, state)
+      case o: OpSend => execute(o, state)
+      case o: OpApplyPrimTag => execute(o, state)
+      case o: OpApplyPrimArg => execute(o, state)
+      case o: OpApplyPrimReg => execute(o, state)
+      case o: OpApplyCmd => execute(o, state)
+      case o: OpRtnTag => execute(o, state)
+      case o: OpRtnArg => execute(o, state)
+      case o: OpRtnReg => execute(o, state)
+      case o: OpRtn => execute(o, state)
+      case o: OpUpcallRtn => execute(o, state)
+      case o: OpResume => execute(o, state)
+      case o: OpNxt => execute(o, state)
+      case o: OpJmp => execute(o, state)
+      case o: OpJmpFalse => execute(o, state)
+      case o: OpJmpCut => execute(o, state)
+      case o: OpLookupToArg => execute(o, state)
+      case o: OpLookupToReg => execute(o, state)
+      case o: OpXferLexToArg => execute(o, state)
+      case o: OpXferLexToReg => execute(o, state)
+      case o: OpXferGlobalToArg => execute(o, state)
+      case o: OpXferGlobalToReg => execute(o, state)
+      case o: OpXferArgToArg => execute(o, state)
+      case o: OpXferRsltToArg => execute(o, state)
+      case o: OpXferArgToRslt => execute(o, state)
+      case o: OpXferRsltToReg => execute(o, state)
+      case o: OpXferRegToRslt => execute(o, state)
+      case o: OpXferRsltToDest => execute(o, state)
+      case o: OpXferSrcToRslt => execute(o, state)
+      case o: OpIndLitToArg => execute(o, state)
+      case o: OpIndLitToReg => execute(o, state)
+      case o: OpIndLitToRslt => execute(o, state)
+      case o: OpImmediateLitToArg => execute(o, state)
+      case o: OpImmediateLitToReg => execute(o, state)
+      case o: OpUnknown => execute(o, state)
+     */
+    }
 
-  def execute(op : OpPush, state : VMState) = {
-    state.ctxt = Ctxt.create(None, state.ctxt)
-  }
+  def execute(op: OpHalt, state: VMState): VMState =
+    state.set(_ >> 'exitFlag)(true)
 
-  def execute(op : OpPop, state : VMState) = {
-    state.ctxt = state.ctxt.get.ctxt
-  }
+  def execute(op: OpPush, state: VMState): VMState =
+    // TODO: Fix state.ctxt.get
+    state.set(_ >> 'ctxt)(Ctxt.create(None, state.ctxt.get))
 
-  def execute(op : OpNargs, state : VMState) = {
-    state.ctxt.get.nargs = op.n
-  }
+  def execute(op: OpPop, state: VMState): VMState =
+    state.set(_ >> 'ctxt)(state.ctxt.get.ctxt)
 
+  def execute(op: OpNargs, state: VMState): VMState =
+    // TODO: Fix state.ctxt.get
+    state.set(_ >> 'ctxt)(Some(state.ctxt.get.copy(nargs = op.n)))
+
+  /*
   def execute(op : OpNargs, state : VMState) = {
     state.ctxt.get.argvec = Tuple.create(op.n, None)
   }
@@ -346,7 +362,6 @@ trait VirtualMachine {
     // may set doNextThreadFlag
   }
 
-  /*
   execute(op : OpXferLexToArg, state : VMState) = {
     // i : Boolean, l : Int, o : Int, a : Int
 
@@ -427,5 +442,5 @@ trait VirtualMachine {
     //
     doNextThreadFlag = true
   }
-  */
+ */
 }
