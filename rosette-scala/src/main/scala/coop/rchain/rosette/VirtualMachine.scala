@@ -54,11 +54,11 @@ trait VirtualMachine {
       case o: OpPush => execute(o, state)
       case o: OpPop => execute(o, state)
       case o: OpNargs => execute(o, state)
-      /*
-      case o: OpAlloc => execute(o, state)
       case o: OpPushAlloc => execute(o, state)
-      case o: OpExtend => execute(o, state)
+      //case o: OpExtend => execute(o, state)
+      /*
       case o: OpOutstanding => execute(o, state)
+      case o: OpAlloc => execute(o, state)
       case o: OpFork => execute(o, state)
       case o: OpXmitTag => execute(o, state)
       case o: OpXmitArg => execute(o, state)
@@ -119,22 +119,32 @@ trait VirtualMachine {
     state.set(_ >> 'ctxt)(Some(state.ctxt.get.copy(nargs = op.n)))
 
   /*
-  def execute(op : OpNargs, state : VMState) = {
-    state.ctxt.get.argvec = Tuple.create(op.n, None)
+  // TODO: Duplicate?
+  def execute(op: OpNargs, state: VMState): VMState =
+    // TODO: Fix state.ctxt.get
+    state.set(_ >> 'ctxt)(
+      Some(state.ctxt.get.copy(argvec = Tuple.create(op.n, None))))
+   */
+
+  def execute(op: OpPushAlloc, state: VMState): VMState = {
+    // TODO: Fix state.ctxt.get
+    val ctxt = Ctxt.create(Some(Tuple.create(op.n, None)), state.ctxt.get)
+    state.set(_ >> 'ctxt)(ctxt)
   }
 
-  def execute(op : OpPushAlloc, state : VMState) = {
-    state.ctxt = Ctxt.create(Tuple.create(op.n, None), state.ctxt)
-  }
-
+  /*
   def execute(op : OpExtend, state : VMState) = {
     // stuff w/ op.v
   }
+   */
 
-  def execute(op : OpOutstanding, state : VMState) = {
+  /*
+  def execute(op: OpOutstanding, state: VMState): VMState = {
     val ctxt = state.ctxt.get
     ctxt.pc = PC.fromInt(op.p)
     ctxt.outstanding = op.n
+
+    state.set(_ >> 'ctxt)(Some(ctxt.copy()))
   }
 
   def execute(op : OpFork, state : VMState) = {

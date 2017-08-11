@@ -1,7 +1,10 @@
 package coop.rchain.rosette
 
-class Tuple extends Ob {}
+case class Tuple() extends Ob {}
 
 object Tuple {
   //def create(a, b : Option[?]) : Tuple = {}
+
+  // Dummy
+  def create(a: Int, b: Option[Int]): Tuple = Tuple()
 }
