@@ -4,8 +4,8 @@ import shapeless._
 import shapeless.OpticDefns.RootLens
 
 case class VMState(bytecodes: List[Int],
-                   code: Option[Code],
-                   ctxt: Option[Ctxt],
+                   code: Code,
+                   ctxt: Ctxt,
                    loc: Location,
                    pc: PC,
                    strandPool: Seq[Ctxt],
