@@ -8,9 +8,9 @@ class Ctxt extends Ob {
   var outstanding : Int
   var tag : Location
   var rslt
+  var reg: List[Int]
 
   def parent() : Option[Env] = {}
-  def reg(regno : Int) = {}
   def ret(rslt) : Boolean = {}
   def scheduleStrand() : Unit = {}
 }
