@@ -119,7 +119,7 @@ trait VirtualMachine {
     state.set(_ >> 'ctxt)(state.ctxt.ctxt)
 
   def execute(op: OpNargs, state: VMState): VMState =
-    state.set(_ >> 'ctxt)(state.ctxt.copy(nargs = op.n))
+    state.set(_ >> 'ctxt >> 'nargs)(op.n)
 
   def execute(op: OpAlloc, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'argvec)(Tuple.create(op.n, Ctxt.NIV))
@@ -140,66 +140,66 @@ trait VirtualMachine {
       .set(_ >> 'ctxt >> 'pc)(PC.fromInt(op.p))
       .set(_ >> 'ctxt >> 'outstanding)(op.n)
 
-  def execute(op: OpFork, state: VMState) =
+  def execute(op: OpFork, state: VMState): VMState =
     state.set(_ >> 'strandPool)(
       state.ctxt.copy(pc = PC.fromInt(op.p)) +: state.strandPool)
 
-  def execute(op: OpXmitTag, state: VMState) =
+  def execute(op: OpXmitTag, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpXmitArg, state: VMState) =
+  def execute(op: OpXmitArg, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'ctxt >> 'tag)(Location.ArgReg(op.a))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpXmitReg, state: VMState) =
+  def execute(op: OpXmitReg, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'ctxt >> 'tag)(Location.CtxtReg(op.r))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpXmit, state: VMState) =
+  def execute(op: OpXmit, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpXmitTagXtnd, state: VMState) =
+  def execute(op: OpXmitTagXtnd, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpXmitArgXtnd, state: VMState) =
+  def execute(op: OpXmitArgXtnd, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'ctxt >> 'tag)(Location.ArgReg(op.a))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpXmitRegXtnd, state: VMState) =
+  def execute(op: OpXmitRegXtnd, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'ctxt >> 'tag)(Location.CtxtReg(op.r))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpSend, state: VMState) =
+  def execute(op: OpSend, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'ctxt)(Ctxt.NIV)
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpApplyPrimTag, state: VMState) = {
+  def execute(op: OpApplyPrimTag, state: VMState): VMState = {
     val newState = state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
@@ -221,7 +221,7 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpApplyPrimArg, state: VMState) = {
+  def execute(op: OpApplyPrimArg, state: VMState): VMState = {
     val newState = state.set(_ >> 'ctxt >> 'nargs)(op.m)
     val prim = Prim.nthPrim(op.k)
     val argno = op.a
@@ -247,7 +247,7 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpApplyPrimReg, state: VMState) = {
+  def execute(op: OpApplyPrimReg, state: VMState): VMState = {
     val newState = state.set(_ >> 'ctxt >> 'nargs)(op.m)
     val prim = Prim.nthPrim(op.k)
     val regno = op.r
@@ -270,7 +270,7 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpApplyCmd, state: VMState) = {
+  def execute(op: OpApplyCmd, state: VMState): VMState = {
     val newState = state.set(_ >> 'ctxt >> 'nargs)(op.m)
     val prim = Prim.nthPrim(op.k)
     val result = if (op.u) { unwindAndApplyPrim(prim) } else {
@@ -288,28 +288,30 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpRtn, state: VMState) =
-    state.set(_ >> 'doRtnData)(op.n).set(_ >> 'doRtnFlag)(true)
+  def execute(op: OpRtn, state: VMState): VMState =
+    state
+      .set(_ >> 'doRtnData)(op.n)
+      .set(_ >> 'doRtnFlag)(true)
 
-  def execute(op: OpRtnTag, state: VMState) =
+  def execute(op: OpRtnTag, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
       .set(_ >> 'doRtnData)(op.n)
       .set(_ >> 'doRtnFlag)(true)
 
-  def execute(op: OpRtnArg, state: VMState) =
+  def execute(op: OpRtnArg, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'tag)(Location.ArgReg(op.a))
       .set(_ >> 'doRtnData)(op.n)
       .set(_ >> 'doRtnFlag)(true)
 
-  def execute(op: OpRtnReg, state: VMState) =
+  def execute(op: OpRtnReg, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'tag)(Location.CtxtReg(op.r))
       .set(_ >> 'doRtnData)(op.n)
       .set(_ >> 'doRtnFlag)(true)
 
-  def execute(op: OpUpcallRtn, state: VMState) = {
+  def execute(op: OpUpcallRtn, state: VMState): VMState = {
     val newState = state.set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
     val ctxt = newState.ctxt
     if (Location.store(ctxt.tag, ctxt.ctxt, ctxt.rslt)) {
@@ -321,22 +323,22 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpUpcallResume, state: VMState) = {
+  def execute(op: OpUpcallResume, state: VMState): VMState = {
     state.ctxt.ctxt.scheduleStrand()
     state.set(_ >> 'doNextThreadFlag)(true)
   }
 
-  def execute(op: OpNxt, state: VMState) =
+  def execute(op: OpNxt, state: VMState): VMState =
     if (getNextStrand()) {
       state.set(_ >> 'exitFlag)(true)
     } else {
       state
     }
 
-  def execute(op: OpJmp, state: VMState) =
+  def execute(op: OpJmp, state: VMState): VMState =
     state.set(_ >> 'pc >> 'relative)(op.n)
 
-  def execute(op: OpJmpCut, state: VMState) = {
+  def execute(op: OpJmpCut, state: VMState): VMState = {
     var cut = op.m
     var newEnv = state.ctxt.parent()
     while (0 < cut) {
@@ -348,7 +350,7 @@ trait VirtualMachine {
       .set(_ >> 'pc >> 'relative)(op.n)
   }
 
-  def execute(op: OpJmpFalse, state: VMState) =
+  def execute(op: OpJmpFalse, state: VMState): VMState =
     if (state.ctxt.rslt == Ob.FALSE) {
       state.set(_ >> 'pc >> 'relative)(op.n)
     } else {
@@ -383,33 +385,33 @@ trait VirtualMachine {
   }
    */
 
-  def execute(op: OpXferGlobalToArg, state: VMState) =
+  def execute(op: OpXferGlobalToArg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
       state.ctxt.argvec.elem.updated(op.a, state.GlobalEnv.entry(op.g)))
 
-  def execute(op: OpXferGlobalToReg, state: VMState) =
+  def execute(op: OpXferGlobalToReg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'reg)(
       state.ctxt.reg.updated(op.r, state.GlobalEnv.entry(op.g)))
 
-  def execute(op: OpXferArgToArg, state: VMState) =
+  def execute(op: OpXferArgToArg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
       state.ctxt.argvec.elem.updated(op.d, state.ctxt.argvec.elem(op.s)))
 
-  def execute(op: OpXferRsltToArg, state: VMState) =
+  def execute(op: OpXferRsltToArg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
       state.ctxt.argvec.elem.updated(op.a, state.ctxt.rslt))
 
-  def execute(op: OpXferArgToRslt, state: VMState) =
+  def execute(op: OpXferArgToRslt, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'rslt)(state.ctxt.argvec.elem(op.a))
 
-  def execute(op: OpXferRsltToReg, state: VMState) =
+  def execute(op: OpXferRsltToReg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'reg)(
-      state.ctxt.reg.updated(op.r, state.ctxt.rslt));
+      state.ctxt.reg.updated(op.r, state.ctxt.rslt))
 
-  def execute(op: OpXferRegToRslt, state: VMState) =
+  def execute(op: OpXferRegToRslt, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'rslt)(state.ctxt.reg(op.r))
 
-  def execute(op: OpXferRsltToDest, state: VMState) = {
+  def execute(op: OpXferRsltToDest, state: VMState): VMState = {
     val newState = state.set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
     if (Location.store(newState.loc, newState.ctxt, newState.ctxt.rslt)) {
       newState.set(_ >> 'vmErrorFlag)(true)
@@ -418,30 +420,30 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpXferSrcToRslt, state: VMState) =
+  def execute(op: OpXferSrcToRslt, state: VMState): VMState =
     state
       .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
       .set(_ >> 'ctxt >> 'rslt)(Location.fetch(state.loc, state.ctxt))
 
-  def execute(op: OpIndLitToArg, state: VMState) =
+  def execute(op: OpIndLitToArg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
       state.ctxt.argvec.elem.updated(op.a, state.code.lit(op.v)))
 
-  def execute(op: OpIndLitToReg, state: VMState) =
+  def execute(op: OpIndLitToReg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'reg)(
       state.ctxt.reg.updated(op.r, state.code.lit(op.v)))
 
-  def execute(op: OpIndLitToRslt, state: VMState) =
+  def execute(op: OpIndLitToRslt, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'rslt)(state.code.lit(op.v))
 
-  def execute(op: OpImmediateLitToArg, state: VMState) =
+  def execute(op: OpImmediateLitToArg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
       state.ctxt.argvec.elem.updated(op.a, vmLiterals(op.v)))
 
-  def execute(op: OpImmediateLitToReg, state: VMState) =
+  def execute(op: OpImmediateLitToReg, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'reg)(
       state.ctxt.reg.updated(op.r, vmLiterals(op.v)))
 
-  def execute(op: OpUnknown, state: VMState) =
+  def execute(op: OpUnknown, state: VMState): VMState =
     state.set(_ >> 'doNextThreadFlag)(true)
 }
