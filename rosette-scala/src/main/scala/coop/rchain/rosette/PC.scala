@@ -1,9 +1,10 @@
 package coop.rchain.rosette
 
-case class PC(relative: Int, absolute: Instr) {
+case class PC(relative: Int) {
   //def fetch(): Instr = {}
 }
 
 object PC {
-  //def fromInt(i: Int): Pc = {}
+  object PLACEHOLDER extends PC(0)
+  def fromInt(i: Int): PC = PLACEHOLDER
 }

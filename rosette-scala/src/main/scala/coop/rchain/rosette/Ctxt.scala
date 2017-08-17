@@ -1,37 +1,24 @@
 package coop.rchain.rosette
 
-/*
-class Ctxt extends Ob {
-  var argvec : Tuple
-  var ctxt : Option[Ctxt] = None
-  var nargs : Int
-  var outstanding : Int
-  var tag : Location
-  var rslt
-  var reg: List[Int]
-
-  def parent() : Option[Env] = {}
-  def ret(rslt) : Boolean = {}
-  def scheduleStrand() : Unit = {}
-}
- */
-
-// Add rslt
 case class Ctxt(argvec: Tuple,
-                ctxt: Option[Ctxt],
+                ctxt: Ctxt,
                 nargs: Int,
                 outstanding: Int,
-                tag: Location)
+                tag: Location,
+                rslt: Ob,
+                env: Env,
+                reg: Seq[Ob],
+                pc: PC)
     extends Ob {
-  //def parent(): Option[Env] = {}
-  //def reg(regno : Int) = {}
-  //def ret(rslt) : Boolean = {}
-  //def scheduleStrand() : Unit = {}
+  def parent(): Env = Env.PLACEHOLDER;
+  def scheduleStrand(): Unit = {}
+  def ret(rslt: Ob): Boolean = true
 }
 
 object Ctxt extends Ob {
-  //def create(a, ctxt : Ctxt) : Option[Ctxt] = {}
-
-  // Dummy
-  def create(tuple: Option[Tuple], ctxt: Ctxt): Option[Ctxt] = None
+  object NIV
+      extends Ctxt(null, null, 0, 0, null, null, null, new Array[Ob](0), null)
+  object PLACEHOLDER
+      extends Ctxt(null, null, 0, 0, null, null, null, new Array[Ob](0), null)
+  def create(tuple: Tuple, ctxt: Ctxt): Ctxt = PLACEHOLDER
 }

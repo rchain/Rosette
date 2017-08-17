@@ -15,9 +15,11 @@ case class VMState(bytecodes: List[Int],
                    doXmitFlag: Boolean = false,
                    xmitData: (Boolean, Boolean) = (false, false),
                    doRtnFlag: Boolean = false,
+                   doRtnData: Boolean = false,
                    doNextThreadFlag: Boolean = false,
                    vmErrorFlag: Boolean = false,
-                   exitFlag: Boolean = false)
+                   exitFlag: Boolean = false,
+                   GlobalEnv: Env)
     extends {
   def set[T](f: RootLens[VMState] ⇒ Lens[VMState, T])(value: T): VMState =
     f(lens[VMState]).set(this)(value)

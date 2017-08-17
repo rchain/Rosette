@@ -30,11 +30,11 @@ case class OpRtnArg(n: Boolean, a: Int) extends Op
 case class OpRtnReg(n: Boolean, r: Int) extends Op
 case class OpRtn(n: Boolean) extends Op
 case class OpUpcallRtn(n: Boolean, v: Int) extends Op
-case class OpResume() extends Op
+case class OpUpcallResume() extends Op
 case class OpNxt() extends Op
-case class OpJmp(n: Boolean) extends Op
-case class OpJmpFalse(n: Boolean) extends Op
-case class OpJmpCut(n: Boolean, m: Int) extends Op
+case class OpJmp(n: Int) extends Op
+case class OpJmpFalse(n: Int) extends Op
+case class OpJmpCut(n: Int, m: Int) extends Op
 case class OpLookupToArg(a: Int, v: Int) extends Op
 case class OpLookupToReg(r: Int, v: Int) extends Op
 case class OpXferLexToArg(i: Boolean, l: Int, o: Int, a: Int) extends Op
