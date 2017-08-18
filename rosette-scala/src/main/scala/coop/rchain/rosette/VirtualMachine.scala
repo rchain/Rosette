@@ -237,8 +237,8 @@ trait VirtualMachine {
       newState.set(_ >> 'vmErrorFlag)(true)
     } else {
       val thirdState =
-        newState.set(_ >> 'ctxt >> 'argvec >> 'elem)(
-          state.ctxt.argvec.elem.updated(argno, result))
+        newState.update(_ >> 'ctxt >> 'argvec >> 'elem)(
+          _.updated(argno, result))
       if (op.n) {
         thirdState.set(_ >> 'doNextThreadFlag)(true)
       } else {
@@ -261,7 +261,7 @@ trait VirtualMachine {
       newState.set(_ >> 'doNextThreadFlag)(true)
     } else {
       val thirdState =
-        newState.set(_ >> 'ctxt >> 'reg)(state.ctxt.reg.updated(regno, result))
+        newState.update(_ >> 'ctxt >> 'reg)(_.updated(regno, result))
       if (op.n) {
         thirdState.set(_ >> 'doNextThreadFlag)(true)
       } else {
@@ -386,27 +386,26 @@ trait VirtualMachine {
    */
 
   def execute(op: OpXferGlobalToArg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
-      state.ctxt.argvec.elem.updated(op.a, state.GlobalEnv.entry(op.g)))
+    state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
+      _.updated(op.a, state.GlobalEnv.entry(op.g)))
 
   def execute(op: OpXferGlobalToReg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'reg)(
-      state.ctxt.reg.updated(op.r, state.GlobalEnv.entry(op.g)))
+    state.update(_ >> 'ctxt >> 'reg)(
+      _.updated(op.r, state.GlobalEnv.entry(op.g)))
 
   def execute(op: OpXferArgToArg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
-      state.ctxt.argvec.elem.updated(op.d, state.ctxt.argvec.elem(op.s)))
+    state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
+      _.updated(op.d, state.ctxt.argvec.elem(op.s)))
 
   def execute(op: OpXferRsltToArg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
-      state.ctxt.argvec.elem.updated(op.a, state.ctxt.rslt))
+    state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
+      _.updated(op.a, state.ctxt.rslt))
 
   def execute(op: OpXferArgToRslt, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'rslt)(state.ctxt.argvec.elem(op.a))
 
   def execute(op: OpXferRsltToReg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'reg)(
-      state.ctxt.reg.updated(op.r, state.ctxt.rslt))
+    state.update(_ >> 'ctxt >> 'reg)(_.updated(op.r, state.ctxt.rslt))
 
   def execute(op: OpXferRegToRslt, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'rslt)(state.ctxt.reg(op.r))
@@ -426,23 +425,21 @@ trait VirtualMachine {
       .set(_ >> 'ctxt >> 'rslt)(Location.fetch(state.loc, state.ctxt))
 
   def execute(op: OpIndLitToArg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
-      state.ctxt.argvec.elem.updated(op.a, state.code.lit(op.v)))
+    state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
+      _.updated(op.a, state.code.lit(op.v)))
 
   def execute(op: OpIndLitToReg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'reg)(
-      state.ctxt.reg.updated(op.r, state.code.lit(op.v)))
+    state.update(_ >> 'ctxt >> 'reg)(_.updated(op.r, state.code.lit(op.v)))
 
   def execute(op: OpIndLitToRslt, state: VMState): VMState =
     state.set(_ >> 'ctxt >> 'rslt)(state.code.lit(op.v))
 
   def execute(op: OpImmediateLitToArg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'argvec >> 'elem)(
-      state.ctxt.argvec.elem.updated(op.a, vmLiterals(op.v)))
+    state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
+      _.updated(op.a, vmLiterals(op.v)))
 
   def execute(op: OpImmediateLitToReg, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'reg)(
-      state.ctxt.reg.updated(op.r, vmLiterals(op.v)))
+    state.update(_ >> 'ctxt >> 'reg)(_.updated(op.r, vmLiterals(op.v)))
 
   def execute(op: OpUnknown, state: VMState): VMState =
     state.set(_ >> 'doNextThreadFlag)(true)
