@@ -339,14 +339,12 @@ trait VirtualMachine {
     state.set(_ >> 'pc >> 'relative)(op.n)
 
   def execute(op: OpJmpCut, state: VMState): VMState = {
-    var cut = op.m
-    var newEnv = state.ctxt.parent()
-    while (0 < cut) {
-      newEnv = newEnv.parent()
-      cut -= 1
-    }
+    val cut = op.m
+
+    val env = (1 to cut).foldLeft(state.ctxt.env)((env, _) => env.parent())
+
     state
-      .set(_ >> 'ctxt >> 'env)(newEnv)
+      .set(_ >> 'ctxt >> 'env)(env)
       .set(_ >> 'pc >> 'relative)(op.n)
   }
 
