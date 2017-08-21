@@ -4,6 +4,8 @@ trait VirtualMachine {
 
   def unwindAndApplyPrim(prim: Prim): Ob = Ob.PLACEHOLDER
   def handleException(result: Ob, op: Op, loc: Location): Ob = Ob.PLACEHOLDER
+  def handleFormalsMismatch(formals: Template): Ob = Ob.PLACEHOLDER
+  def handleMissingBinding(key: Ob, argReg: Location): Ob = Ob.PLACEHOLDER
   def getNextStrand(): Boolean = true
   val vmLiterals: Seq[Ob] = new Array[Ob](0)
 
@@ -60,7 +62,7 @@ trait VirtualMachine {
       case o: OpPop => execute(o, state)
       case o: OpNargs => execute(o, state)
       case o: OpPushAlloc => execute(o, state)
-      //case o: OpExtend => execute(o, state)
+      case o: OpExtend => execute(o, state)
       case o: OpOutstanding => execute(o, state)
       case o: OpAlloc => execute(o, state)
       case o: OpFork => execute(o, state)
@@ -86,12 +88,10 @@ trait VirtualMachine {
       case o: OpJmp => execute(o, state)
       case o: OpJmpFalse => execute(o, state)
       case o: OpJmpCut => execute(o, state)
-      /*
       case o: OpLookupToArg => execute(o, state)
       case o: OpLookupToReg => execute(o, state)
       case o: OpXferLexToArg => execute(o, state)
       case o: OpXferLexToReg => execute(o, state)
-       */
       case o: OpXferGlobalToArg => execute(o, state)
       case o: OpXferGlobalToReg => execute(o, state)
       case o: OpXferArgToArg => execute(o, state)
@@ -129,11 +129,22 @@ trait VirtualMachine {
     state.set(_ >> 'ctxt)(ctxt)
   }
 
-  /*
-  def execute(op : OpExtend, state : VMState) = {
-    // stuff w/ op.v
+  def execute(op: OpExtend, state: VMState): VMState = {
+    val formals = state.code.lit(op.v).asInstanceOf[Template]
+    val actuals = formals.matchPattern(state.ctxt.argvec, state.ctxt.nargs)
+
+    actuals match {
+      case Some(tuple) =>
+        state
+          .set(_ >> 'ctxt >> 'nargs)(0)
+          .set(_ >> 'ctxt >> 'env)(
+            state.ctxt.env.extendWith(formals.keymeta, tuple))
+
+      case None =>
+        handleFormalsMismatch(formals)
+        state.set(_ >> 'doNextThreadFlag)(true)
+    }
   }
-   */
 
   def execute(op: OpOutstanding, state: VMState): VMState =
     state
@@ -355,33 +366,77 @@ trait VirtualMachine {
       state
     }
 
-  /*
-  def execute(op : OpLookupToArg, state : VMState) = {
+  def execute(op: OpLookupToArg, state: VMState): VMState = {
     val argno = op.a
-    val key : Option[Ob] = Some(state.code.lit(op.v))
-    // may set doNextThreadFlag
+    val key = state.code.lit(op.v)
+
+    val value =
+      state.ctxt.selfEnv.meta.lookupOBO(state.ctxt.selfEnv, key, state.ctxt)
+
+    value match {
+      case Left(Upcall) =>
+        state
+          .set(_ >> 'doNextThreadFlag)(true)
+      case Left(Absent) =>
+        handleMissingBinding(key, Location.ArgReg(argno))
+        state
+          .set(_ >> 'doNextThreadFlag)(true)
+
+      case Right(ob) =>
+        state.update(_ >> 'ctxt >> 'argvec >> 'elem)(_.updated(argno, ob))
+    }
   }
 
-  def execute(op : OpLookupToReg, state : VMState) = {
-    // rv
-    // may set doNextThreadFlag
+  def execute(op: OpLookupToReg, state: VMState): VMState = {
+    val regno = op.r
+    val key = state.code.lit(op.v)
+
+    val value =
+      state.ctxt.selfEnv.meta.lookupOBO(state.ctxt.selfEnv, key, state.ctxt)
+
+    value match {
+      case Left(Upcall) =>
+        state
+          .set(_ >> 'doNextThreadFlag)(true)
+      case Left(Absent) =>
+        handleMissingBinding(key, Location.CtxtReg(regno))
+        state
+          .set(_ >> 'doNextThreadFlag)(true)
+
+      case Right(ob) =>
+        state.update(_ >> 'ctxt >> 'reg)(_.updated(regno, ob))
+    }
   }
 
-  def execute(op : OpLookupToArg, state : VMState) = {
-    // av
-    // may set doNextThreadFlag
+  def execute(op: OpXferLexToArg, state: VMState): VMState = {
+    val level = op.l
+
+    val env = (1 to level).foldLeft(state.ctxt.env)((env, _) => env.parent())
+
+    val slot = if (op.i) {
+      val actor = Actor(env)
+      actor.extension.slot
+    } else {
+      env.slot
+    }
+
+    state.update(_ >> 'ctxt >> 'argvec >> 'elem)(_.updated(op.a, slot(op.o)))
   }
 
-  execute(op : OpXferLexToArg, state : VMState) = {
-    // i : Boolean, l : Int, o : Int, a : Int
+  def execute(op: OpXferLexToReg, state: VMState): VMState = {
+    val level = op.l
 
+    val env = (1 to level).foldLeft(state.ctxt.env)((env, _) => env.parent())
+
+    val slot = if (op.i) {
+      val actor = Actor(env)
+      actor.extension.slot
+    } else {
+      env.slot
+    }
+
+    state.update(_ >> 'ctxt >> 'reg)(_.updated(op.r, slot(op.o)))
   }
-
-  execute(op : OpXferLexToReg, state : VMState) = {
-    // i : Boolean, l : Int, o : Int, r : Int
-
-  }
-   */
 
   def execute(op: OpXferGlobalToArg, state: VMState): VMState =
     state.update(_ >> 'ctxt >> 'argvec >> 'elem)(

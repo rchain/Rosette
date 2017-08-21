@@ -1,7 +1,14 @@
 package coop.rchain.rosette
 
+sealed trait LookupError
+case object Absent extends LookupError
+case object Upcall extends LookupError
+
 class Ob {
   def is(value: Ob.ObTag): Boolean = true
+
+  def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
+    Right(Ob.PLACEHOLDER)
 }
 
 object Ob {
