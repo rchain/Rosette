@@ -378,7 +378,6 @@ trait VirtualMachine {
     value match {
       case Left(Upcall) =>
         state
-          .set(_ >> 'ctxt >> 'pc)(state.code.relativize(state.pc.absolute))
           .set(_ >> 'doNextThreadFlag)(true)
       case Left(Absent) =>
         handleMissingBinding(key, Location.ArgReg(argno))
@@ -400,7 +399,6 @@ trait VirtualMachine {
     value match {
       case Left(Upcall) =>
         state
-          .set(_ >> 'ctxt >> 'pc)(state.code.relativize(state.pc.absolute))
           .set(_ >> 'doNextThreadFlag)(true)
       case Left(Absent) =>
         handleMissingBinding(key, Location.CtxtReg(regno))
