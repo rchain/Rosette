@@ -1,13 +1,83 @@
 package coop.rchain.rosette
 
+sealed trait Work
+case object NoWorkLeft extends Work
+case object WaitForAsync extends Work
+case class StrandsScheduled(state: VMState) extends Work
+
 trait VirtualMachine {
 
   def unwindAndApplyPrim(prim: Prim): Ob = Ob.PLACEHOLDER
   def handleException(result: Ob, op: Op, loc: Location): Ob = Ob.PLACEHOLDER
   def handleFormalsMismatch(formals: Template): Ob = Ob.PLACEHOLDER
   def handleMissingBinding(key: Ob, argReg: Location): Ob = Ob.PLACEHOLDER
-  def getNextStrand(): Boolean = true
   val vmLiterals: Seq[Ob] = new Array[Ob](0)
+
+  def getNextStrand(state: VMState): (Boolean, VMState) =
+    if (state.strandPool.isEmpty) {
+      tryAwakeSleepingStrand(state) match {
+        case WaitForAsync =>
+          val newState = state.set(_ >> 'doAsyncWaitFlag)(true)
+
+          (false, newState)
+
+        case NoWorkLeft => (true, state)
+
+        case StrandsScheduled(stateScheduled) =>
+          val strand = stateScheduled.strandPool.head
+          val newState = stateScheduled.update(_ >> 'strandPool)(_.tail)
+
+          (false, installStrand(strand, newState))
+      }
+    } else {
+      val strand = state.strandPool.head
+      val newState = state.update(_ >> 'strandPool)(_.tail)
+
+      (false, installStrand(strand, newState))
+    }
+
+  def tryAwakeSleepingStrand(state: VMState): Work =
+    if (state.sleeperPool.isEmpty) {
+      if (state.nsigs == 0) {
+        NoWorkLeft
+      } else {
+        WaitForAsync
+      }
+    } else {
+
+      /** Schedule all sleeping strands
+        *
+        * Pop strand from sleeperPool and enqueue
+        * to strandPool
+        */
+      val scheduled = state.sleeperPool
+        .foldLeft(state) {
+          case (st, sleeper) =>
+            sleeper.scheduleStrand(st)
+        }
+        .set(_ >> 'sleeperPool)(Seq())
+
+      StrandsScheduled(scheduled)
+    }
+
+  def installStrand(strand: Ctxt, state: VMState): VMState = {
+    val stateInstallMonitor =
+      if (strand.monitor != state.currentMonitor)
+        installMonitor(strand.monitor, state)
+      else state
+
+    installCtxt(strand, stateInstallMonitor)
+  }
+
+  def installMonitor(monitor: Monitor, state: VMState): VMState =
+    // TODO: Implement
+    state
+
+  def installCtxt(ctxt: Ctxt, state: VMState): VMState =
+    state
+      .set(_ >> 'ctxt)(ctxt)
+      .set(_ >> 'code)(ctxt.code)
+      .set(_ >> 'pc >> 'relative)(ctxt.pc.relative)
 
   def executeSeq(opCodes: Seq[Op], state: VMState): VMState = {
     var pc = 0
@@ -334,17 +404,20 @@ trait VirtualMachine {
     }
   }
 
-  def execute(op: OpUpcallResume, state: VMState): VMState = {
-    state.ctxt.ctxt.scheduleStrand()
-    state.set(_ >> 'doNextThreadFlag)(true)
-  }
+  def execute(op: OpUpcallResume, state: VMState): VMState =
+    state.ctxt.ctxt
+      .scheduleStrand(state)
+      .set(_ >> 'doNextThreadFlag)(true)
 
-  def execute(op: OpNxt, state: VMState): VMState =
-    if (getNextStrand()) {
-      state.set(_ >> 'exitFlag)(true)
+  def execute(op: OpNxt, state: VMState): VMState = {
+    val (exit, newState) = getNextStrand(state)
+
+    if (exit) {
+      newState.set(_ >> 'exitFlag)(true)
     } else {
-      state
+      newState
     }
+  }
 
   def execute(op: OpJmp, state: VMState): VMState =
     state.set(_ >> 'pc >> 'relative)(op.n)
