@@ -223,12 +223,23 @@ trait VirtualMachine {
     } else if (result.is(Ob.OTsysval)) {
       handleException(result, op, newState.loc)
       newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (Location.store(state.loc, state.ctxt, result)) {
-      newState.set(_ >> 'vmErrorFlag)(true)
-    } else if (op.n) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
     } else {
-      newState
+      import Location._;
+
+      Location.store(newState.loc, newState.ctxt, newState.globalEnv, result) match {
+        case StoreFail() => newState.set(_ >> 'vmErrorFlag)(true)
+
+        case StoreCtxt(ctxt) => {
+          val thirdState = newState.set(_ >> 'ctxt)(ctxt)
+          if (op.n) {
+            thirdState.set(_ >> 'doNextThreadFlag)(true)
+          } else {
+            thirdState
+          }
+        }
+
+        case StoreGlobal(env) => newState.set(_ >> 'globalEnv)(env)
+      }
     }
   }
 
@@ -325,12 +336,22 @@ trait VirtualMachine {
   def execute(op: OpUpcallRtn, state: VMState): VMState = {
     val newState = state.set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
     val ctxt = newState.ctxt
-    if (Location.store(ctxt.tag, ctxt.ctxt, ctxt.rslt)) {
-      newState.set(_ >> 'vmErrorFlag)(true)
-    } else if (op.n) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else {
-      newState
+
+    import Location._;
+
+    Location.store(ctxt.tag, ctxt.ctxt, newState.globalEnv, ctxt.rslt) match {
+      case StoreFail() => newState.set(_ >> 'vmErrorFlag)(true)
+
+      case StoreCtxt(ctxt) => {
+        val thirdState = newState.set(_ >> 'ctxt)(ctxt)
+        if (op.n) {
+          thirdState.set(_ >> 'doNextThreadFlag)(true)
+        } else {
+          thirdState
+        }
+      }
+
+      case StoreGlobal(env) => newState.set(_ >> 'globalEnv)(env)
     }
   }
 
@@ -440,11 +461,11 @@ trait VirtualMachine {
 
   def execute(op: OpXferGlobalToArg, state: VMState): VMState =
     state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
-      _.updated(op.a, state.GlobalEnv.entry(op.g)))
+      _.updated(op.a, state.globalEnv.entry(op.g)))
 
   def execute(op: OpXferGlobalToReg, state: VMState): VMState =
     state.update(_ >> 'ctxt >> 'reg)(
-      _.updated(op.r, state.GlobalEnv.entry(op.g)))
+      _.updated(op.r, state.globalEnv.entry(op.g)))
 
   def execute(op: OpXferArgToArg, state: VMState): VMState =
     state.update(_ >> 'ctxt >> 'argvec >> 'elem)(
@@ -465,10 +486,17 @@ trait VirtualMachine {
 
   def execute(op: OpXferRsltToDest, state: VMState): VMState = {
     val newState = state.set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
-    if (Location.store(newState.loc, newState.ctxt, newState.ctxt.rslt)) {
-      newState.set(_ >> 'vmErrorFlag)(true)
-    } else {
-      newState
+    import Location._;
+
+    Location.store(newState.loc,
+                   newState.ctxt,
+                   newState.globalEnv,
+                   newState.ctxt.rslt) match {
+      case StoreFail() => newState.set(_ >> 'vmErrorFlag)(true)
+
+      case StoreCtxt(ctxt) => newState.set(_ >> 'ctxt)(ctxt)
+
+      case StoreGlobal(env) => newState.set(_ >> 'globalEnv)(env)
     }
   }
 

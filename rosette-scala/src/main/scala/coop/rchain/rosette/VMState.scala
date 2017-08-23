@@ -19,7 +19,7 @@ case class VMState(bytecodes: List[Int],
                    doNextThreadFlag: Boolean = false,
                    vmErrorFlag: Boolean = false,
                    exitFlag: Boolean = false,
-                   GlobalEnv: Env)
+                   globalEnv: Ob = Ob.PLACEHOLDER)
     extends {
   def set[T](f: RootLens[VMState] ⇒ Lens[VMState, T])(value: T): VMState =
     f(lens[VMState]).set(this)(value)

@@ -1,14 +1,27 @@
 package coop.rchain.rosette
 
+import shapeless._
+import shapeless.OpticDefns.RootLens
+
 sealed trait LookupError
 case object Absent extends LookupError
 case object Upcall extends LookupError
 
 class Ob {
-  def is(value: Ob.ObTag): Boolean = true
+  val entry: Seq[Ob] = null
+  val meta: Ob = null
+  val slot: Seq[Ob] = null
 
+  def container(): Ob = Ob.PLACEHOLDER
+  def extendWith(keymeta: Ob): Ob = Ob.PLACEHOLDER
+  def extendWith(keymeta: Ob, argvec: Tuple): Ob = Ob.PLACEHOLDER
+  def is(value: Ob.ObTag): Boolean = true
   def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
     Right(Ob.PLACEHOLDER)
+  def numberOfSlots(): Int = 0
+  def parent(): Ob = Ob.PLACEHOLDER
+  def setAddr(ind: Int, level: Int, offset: Int, value: Ob): Option[Ob] = None
+  def setLex(ind: Int, level: Int, offset: Int, value: Ob): Option[Ob] = None
 }
 
 object Ob {
