@@ -9,10 +9,15 @@ case class Ctxt(argvec: Tuple,
                 env: Env,
                 selfEnv: Env,
                 reg: Seq[Ob],
-                pc: PC)
+                pc: PC,
+                code: Code,
+                monitor: Monitor)
     extends Ob {
   def parent(): Env = Env.PLACEHOLDER
-  def scheduleStrand(): Unit = {}
+
+  def scheduleStrand(state: VMState): VMState =
+    state.update(_ >> 'strandPool)(_ :+ this)
+
   def ret(rslt: Ob): Boolean = true
 }
 
@@ -27,6 +32,8 @@ object Ctxt extends Ob {
                    null,
                    null,
                    new Array[Ob](0),
+                   null,
+                   null,
                    null)
   object PLACEHOLDER
       extends Ctxt(null,
@@ -38,6 +45,8 @@ object Ctxt extends Ob {
                    null,
                    null,
                    new Array[Ob](0),
+                   null,
+                   null,
                    null)
   def create(tuple: Tuple, ctxt: Ctxt): Ctxt = PLACEHOLDER
 }
