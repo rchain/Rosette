@@ -3,6 +3,8 @@ package coop.rchain.rosette
 case class Location(atom: Ob, genericType: Location.GenericType) extends Ob {}
 
 object Location {
+  import Lenses._
+
   object PLACEHOLDER extends Location(Ob.PLACEHOLDER, LTLimbo())
   object LIMBO extends Location(Ob.PLACEHOLDER, LTLimbo())
 
@@ -14,21 +16,26 @@ object Location {
   case class LTAddrVariable(ind: Int, level: Int, offset: Int)
       extends GenericType
   case class LTGlobalVariable(offset: Int) extends GenericType
-  case class LTBitField(ind: Int, level: Int, offset: Int, span: Int)
+  case class LTBitField(ind: Int, level: Int, offset: Int, spanSize: Int)
       extends GenericType
-  case class LTBitField00(offset: Int, span: Int) extends GenericType
+  case class LTBitField00(offset: Int, spanSize: Int) extends GenericType
   case class LTLimbo() extends GenericType
 
   def ArgReg(a: Int): Location = PLACEHOLDER
   def CtxtReg(r: Int): Location = PLACEHOLDER
   def fetch(loc: Location, k: Ctxt): Ob = Ob.PLACEHOLDER
+  def isFixNum(value: Ob): Boolean = false
+  def fixVal(value: Ob): Int = 0
 
   sealed trait StoreResult
   case class StoreFail() extends StoreResult
   case class StoreCtxt(ctxt: Ctxt) extends StoreResult
-  case class StoreGlobal(globalEnv: Ob) extends StoreResult
+  case class StoreGlobal(globalEnv: TblObject) extends StoreResult
 
-  def store(loc: Location, k: Ctxt, globalEnv: Ob, value: Ob): StoreResult =
+  def store(loc: Location,
+            k: Ctxt,
+            globalEnv: TblObject,
+            value: Ob): StoreResult =
     loc.genericType match {
       case LTCtxtRegister(reg) =>
         StoreCtxt(k.update(_ >> 'reg)(_.updated(reg, value)))
@@ -56,11 +63,28 @@ object Location {
         if (offset > globalEnv.container().numberOfSlots()) {
           StoreFail()
         } else {
-          StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(n, value)))
+          StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(offset, value)))
         }
 
-      case LTBitField(ind, level, offset, span) => StoreFail()
-      case LTBitField00(offset, span) => StoreFail()
+      case LTBitField(ind, level, offset, span) =>
+        if (isFixNum(value)) {
+          StoreFail()
+        } else {
+          k.env.setField(ind, level, offset, span, fixVal(value)) match {
+            case None => StoreFail()
+            case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
+          }
+        }
+
+      case LTBitField00(offset, span) =>
+        if (isFixNum(value)) {
+          StoreFail()
+        } else {
+          k.env.setField(0, 0, offset, span, fixVal(value)) match {
+            case None => StoreFail()
+            case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
+          }
+        }
       case LTLimbo() => StoreFail()
     }
 }
