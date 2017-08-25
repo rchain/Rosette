@@ -41,7 +41,7 @@ object Location {
         StoreCtxt(k.update(_ >> 'reg)(_.updated(reg, value)))
 
       case LTArgRegister(argReg) =>
-        if (argReg > k.argvec.elem.length) {
+        if (argReg >= k.argvec.elem.length) {
           StoreFail()
         } else {
           StoreCtxt(k.update(_ >> 'argvec >> 'elem)(_.updated(argReg, value)))
@@ -60,7 +60,7 @@ object Location {
         }
 
       case LTGlobalVariable(offset) =>
-        if (offset > globalEnv.container().numberOfSlots()) {
+        if (offset >= globalEnv.container().numberOfSlots()) {
           StoreFail()
         } else {
           StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(offset, value)))
