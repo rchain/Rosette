@@ -60,7 +60,7 @@ object Location {
         }
 
       case LTGlobalVariable(offset) =>
-        if (offset >= globalEnv.container().numberOfSlots()) {
+        if (offset >= globalEnv.numberOfSlots()) {
           StoreFail()
         } else {
           StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(offset, value)))

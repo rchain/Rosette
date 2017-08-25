@@ -29,7 +29,6 @@ class Ob(val entry: Seq[Ob] = null,
          val meta: Ob = null,
          val slot: Seq[Ob] = null)
     extends Base {
-  def container(): Ob = Ob.PLACEHOLDER
   def extendWith(keymeta: Ob): Ob = Ob.PLACEHOLDER
   def extendWith(keymeta: Ob, argvec: Tuple): Ob = Ob.PLACEHOLDER
   def is(value: Ob.ObTag): Boolean = true
