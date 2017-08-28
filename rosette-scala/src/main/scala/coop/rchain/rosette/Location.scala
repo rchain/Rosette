@@ -23,7 +23,7 @@ object Location {
 
   def ArgReg(a: Int): Location = PLACEHOLDER
   def CtxtReg(r: Int): Location = PLACEHOLDER
-  def fetch(loc: Location, k: Ctxt): Ob = Ob.PLACEHOLDER
+  def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob = Ob.PLACEHOLDER
   def isFixNum(value: Ob): Boolean = false
   def fixVal(value: Ob): Int = 0
 
@@ -41,49 +41,49 @@ object Location {
         StoreCtxt(k.update(_ >> 'reg)(_.updated(reg, value)))
 
       case LTArgRegister(argReg) =>
-        if (argReg >= k.argvec.elem.length) {
-          StoreFail
-        } else {
+        if (argReg < k.argvec.elem.size) {
           StoreCtxt(k.update(_ >> 'argvec >> 'elem)(_.updated(argReg, value)))
+        } else {
+          StoreFail
         }
 
       case LTLexVariable(ind, level, offset) =>
         k.env.setLex(ind, level, offset, value) match {
-          case None => StoreFail
           case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
+          case None => StoreFail
         }
 
       case LTAddrVariable(ind, level, offset) =>
         k.env.setLex(ind, level, offset, value) match {
-          case None => StoreFail
           case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
+          case None => StoreFail
         }
 
       case LTGlobalVariable(offset) =>
-        if (offset >= globalEnv.numberOfSlots()) {
-          StoreFail
-        } else {
+        if (offset < globalEnv.numberOfSlots()) {
           StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(offset, value)))
+        } else {
+          StoreFail
         }
 
       case LTBitField(ind, level, offset, spanSize) =>
-        if (isFixNum(value)) {
-          StoreFail
-        } else {
+        if (!isFixNum(value)) {
           k.env.setField(ind, level, offset, spanSize, fixVal(value)) match {
-            case None => StoreFail
             case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
+            case None => StoreFail
           }
+        } else {
+          StoreFail
         }
 
       case LTBitField00(offset, spanSize) =>
-        if (isFixNum(value)) {
-          StoreFail
-        } else {
+        if (!isFixNum(value)) {
           k.env.setField(0, 0, offset, spanSize, fixVal(value)) match {
-            case None => StoreFail
             case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
+            case None => StoreFail
           }
+        } else {
+          StoreFail
         }
 
       case LTLimbo => StoreFail

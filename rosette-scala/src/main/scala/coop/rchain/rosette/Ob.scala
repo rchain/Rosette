@@ -20,10 +20,12 @@ object Lenses {
 
     def update[T](f: RootLens[A] ⇒ Lens[A, T])(value: T => T): A =
       updateA(base)(f)(value)
+
+    def updateSelf[T](value: A => A): A = value(base)
   }
 }
 
-trait Base {}
+trait Base
 
 class Ob(val entry: Seq[Ob] = null,
          val meta: Ob = null,
