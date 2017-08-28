@@ -24,6 +24,10 @@ trait VirtualMachine {
         case NoWorkLeft => (true, state)
 
         case StrandsScheduled(stateScheduled) =>
+          if (state.debug) {
+            state.update(_ >> 'debugInfo)(_ :+ "*** waking sleepers\n")
+          }
+
           val strand = stateScheduled.strandPool.head
           val newState = stateScheduled.update(_ >> 'strandPool)(_.tail)
 
@@ -69,15 +73,35 @@ trait VirtualMachine {
     installCtxt(strand, stateInstallMonitor)
   }
 
-  def installMonitor(monitor: Monitor, state: VMState): VMState =
-    // TODO: Implement
-    state
+  def installMonitor(monitor: Monitor, state: VMState): VMState = {
+    if (state.debug) {
+      state.update(_ >> 'debugInfo)(_ :+ s"*** new monitor: ${monitor.id}\n")
+    }
 
-  def installCtxt(ctxt: Ctxt, state: VMState): VMState =
+    state.currentMonitor.stop()
+
+    val newState = state
+      .set(_ >> 'bytecodes)(monitor.opcodeCounts)
+      .set(_ >> 'currentMonitor)(monitor)
+      .set(_ >> 'debug)(monitor.tracing)
+      .set(_ >> 'obCounts)(monitor.obCounts)
+
+    newState.currentMonitor
+      .start()
+
+    newState
+  }
+
+  def installCtxt(ctxt: Ctxt, state: VMState): VMState = {
+    if (state.debug) {
+      state.update(_ >> 'debugInfo)(_ :+ "*** new strand\n")
+    }
+
     state
       .set(_ >> 'ctxt)(ctxt)
       .set(_ >> 'code)(ctxt.code)
       .set(_ >> 'pc >> 'relative)(ctxt.pc.relative)
+  }
 
   def executeSeq(opCodes: Seq[Op], state: VMState): VMState = {
     var pc = 0
@@ -86,7 +110,10 @@ trait VirtualMachine {
 
     while (pc < opCodes.size && !exit) {
       val op = opCodes(pc)
+
       currentState = modifyFlags(executeDispatch(op, state))
+        .update(_ >> 'bytecodes)(m =>
+          m.updated(op, currentState.bytecodes.getOrElse(op, 0.toLong) + 1))
 
       pc = currentState.pc.relative
 

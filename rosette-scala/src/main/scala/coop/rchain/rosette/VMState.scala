@@ -3,7 +3,7 @@ package coop.rchain.rosette
 import shapeless._
 import shapeless.OpticDefns.RootLens
 
-case class VMState(bytecodes: List[Int],
+case class VMState(bytecodes: Map[Op, Long],
                    code: Code,
                    ctxt: Ctxt,
                    loc: Location,
@@ -14,7 +14,8 @@ case class VMState(bytecodes: List[Int],
                    nsigs: Int = 0,
                    systemMonitor: Monitor,
                    currentMonitor: Monitor,
-                   debugLevel: Int = 0,
+                   debug: Boolean = false,
+                   debugInfo: Seq[String] = Seq(),
                    nextOpFlag: Boolean = true,
                    doXmitFlag: Boolean = false,
                    xmitData: (Boolean, Boolean) = (false, false),
@@ -24,6 +25,7 @@ case class VMState(bytecodes: List[Int],
                    doAsyncWaitFlag: Boolean = false,
                    vmErrorFlag: Boolean = false,
                    exitFlag: Boolean = false,
+                   obCounts: Long = 0,
                    GlobalEnv: Env)
     extends {
   def set[T](f: RootLens[VMState] ⇒ Lens[VMState, T])(value: T): VMState =
