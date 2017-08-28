@@ -210,105 +210,103 @@ trait VirtualMachine {
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
-  def execute(op: OpApplyPrimTag, state: VMState): VMState = {
-    val newState = state
+  def execute(op: OpApplyPrimTag, state: VMState): VMState =
+    state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
       .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
-    val prim = Prim.nthPrim(op.k)
-    val result = if (op.u) { unwindAndApplyPrim(prim) } else {
-      prim.dispatchHelper(state.ctxt)
-    }
-    if (result == Ob.DEADTHREAD) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (result.is(Ob.OTsysval)) {
-      handleException(result, op, newState.loc)
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else {
-      import Location._;
+      .update(_)(state => {
+        val prim = Prim.nthPrim(op.k)
+        val result = if (op.u) { unwindAndApplyPrim(prim) } else {
+          prim.dispatchHelper(state.ctxt)
+        }
+        if (result == Ob.DEADTHREAD) {
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else if (result.is(Ob.OTsysval)) {
+          handleException(result, op, state.loc)
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else {
+          import Location._;
 
-      Location.store(newState.loc, newState.ctxt, newState.globalEnv, result) match {
-        case StoreFail() => newState.set(_ >> 'vmErrorFlag)(true)
+          Location.store(state.loc, state.ctxt, state.globalEnv, result) match {
+            case StoreFail => state.set(_ >> 'vmErrorFlag)(true)
 
-        case StoreCtxt(ctxt) => {
-          val thirdState = newState.set(_ >> 'ctxt)(ctxt)
-          if (op.n) {
-            thirdState.set(_ >> 'doNextThreadFlag)(true)
-          } else {
-            thirdState
+            case StoreCtxt(ctxt) =>
+              state
+                .set(_ >> 'ctxt)(ctxt)
+                .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+
+            case StoreGlobal(env) => state.set(_ >> 'globalEnv)(env)
           }
         }
-
-        case StoreGlobal(env) => newState.set(_ >> 'globalEnv)(env)
-      }
-    }
-  }
+      })
 
   def execute(op: OpApplyPrimArg, state: VMState): VMState = {
-    val newState = state.set(_ >> 'ctxt >> 'nargs)(op.m)
-    val prim = Prim.nthPrim(op.k)
-    val argno = op.a
-    val result = if (op.u) { unwindAndApplyPrim(prim) } else {
-      prim.dispatchHelper(state.ctxt)
-    }
-    if (result == Ob.DEADTHREAD) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (result.is(Ob.OTsysval)) {
-      handleException(result, op, newState.loc)
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (argno >= state.ctxt.argvec.elem.length) {
-      newState.set(_ >> 'vmErrorFlag)(true)
-    } else {
-      val thirdState =
-        newState.update(_ >> 'ctxt >> 'argvec >> 'elem)(
-          _.updated(argno, result))
-      if (op.n) {
-        thirdState.set(_ >> 'doNextThreadFlag)(true)
-      } else {
-        thirdState
-      }
-    }
-  }
+    state
+      .set(_ >> 'ctxt >> 'nargs)(op.m)
+      .update(_)(state => {
+        val prim = Prim.nthPrim(op.k)
+        val argno = op.a
+        val result = if (op.u) { unwindAndApplyPrim(prim) } else {
+          prim.dispatchHelper(state.ctxt)
+        }
+        
+        if (result == Ob.DEADTHREAD) {
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else if (result.is(Ob.OTsysval)) {
+          handleException(result, op, state.loc)
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else if (argno >= state.ctxt.argvec.elem.length) {
+          state.set(_ >> 'vmErrorFlag)(true)
+        } else {
+          state
+            .update(_ >> 'ctxt >> 'argvec >> 'elem)(_.updated(argno, result))
+            .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+        }
+        
+      })
 
   def execute(op: OpApplyPrimReg, state: VMState): VMState = {
-    val newState = state.set(_ >> 'ctxt >> 'nargs)(op.m)
-    val prim = Prim.nthPrim(op.k)
-    val regno = op.r
-    val result = if (op.u) { unwindAndApplyPrim(prim) } else {
-      prim.dispatchHelper(state.ctxt)
-    }
-    if (result == Ob.DEADTHREAD) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (result.is(Ob.OTsysval)) {
-      handleException(result, op, Location.CtxtReg(regno))
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else {
-      val thirdState =
-        newState.update(_ >> 'ctxt >> 'reg)(_.updated(regno, result))
-      if (op.n) {
-        thirdState.set(_ >> 'doNextThreadFlag)(true)
-      } else {
-        thirdState
-      }
-    }
-  }
+    state
+      .set(_ >> 'ctxt >> 'nargs)(op.m)
+      .update(_)(state => {
+        val prim = Prim.nthPrim(op.k)
+        val regno = op.r
+        val result = if (op.u) { unwindAndApplyPrim(prim) } else {
+          prim.dispatchHelper(state.ctxt)
+        }
+        
+        if (result == Ob.DEADTHREAD) {
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else if (result.is(Ob.OTsysval)) {
+          handleException(result, op, Location.CtxtReg(regno))
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else {
+          state
+            .update(_ >> 'ctxt >> 'reg)(_.updated(regno, result))
+            .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+        }
+        
+      })
 
   def execute(op: OpApplyCmd, state: VMState): VMState = {
-    val newState = state.set(_ >> 'ctxt >> 'nargs)(op.m)
-    val prim = Prim.nthPrim(op.k)
-    val result = if (op.u) { unwindAndApplyPrim(prim) } else {
-      prim.dispatchHelper(state.ctxt)
-    }
-    if (result == Ob.DEADTHREAD) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (result.is(Ob.OTsysval)) {
-      handleException(result, op, Location.LIMBO)
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else if (op.n) {
-      newState.set(_ >> 'doNextThreadFlag)(true)
-    } else {
-      newState
-    }
-  }
+    state
+      .set(_ >> 'ctxt >> 'nargs)(op.m)
+      .update(_)(state => {
+        val prim = Prim.nthPrim(op.k)
+        val result = if (op.u) { unwindAndApplyPrim(prim) } else {
+          prim.dispatchHelper(state.ctxt)
+        }
+        
+        if (result == Ob.DEADTHREAD) {
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else if (result.is(Ob.OTsysval)) {
+          handleException(result, op, Location.LIMBO)
+          state.set(_ >> 'doNextThreadFlag)(true)
+        } else {
+          state.update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+        }
+        
+      })
 
   def execute(op: OpRtn, state: VMState): VMState =
     state
@@ -334,26 +332,24 @@ trait VirtualMachine {
       .set(_ >> 'doRtnFlag)(true)
 
   def execute(op: OpUpcallRtn, state: VMState): VMState = {
-    val newState = state.set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
-    val ctxt = newState.ctxt
+    state
+      .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
+      .update(_)(state => {
+        val ctxt = state.ctxt
 
-    import Location._;
+        import Location._;
 
-    Location.store(ctxt.tag, ctxt.ctxt, newState.globalEnv, ctxt.rslt) match {
-      case StoreFail() => newState.set(_ >> 'vmErrorFlag)(true)
+        Location.store(ctxt.tag, ctxt.ctxt, state.globalEnv, ctxt.rslt) match {
+          case StoreFail => state.set(_ >> 'vmErrorFlag)(true)
 
-      case StoreCtxt(ctxt) => {
-        val thirdState = newState.set(_ >> 'ctxt)(ctxt)
-        if (op.n) {
-          thirdState.set(_ >> 'doNextThreadFlag)(true)
-        } else {
-          thirdState
+          case StoreCtxt(ctxt) =>
+            state
+              .set(_ >> 'ctxt)(ctxt)
+              .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+
+          case StoreGlobal(env) => state.set(_ >> 'globalEnv)(env)
         }
-      }
-
-      case StoreGlobal(env) => newState.set(_ >> 'globalEnv)(env)
-    }
-  }
+      })
 
   def execute(op: OpUpcallResume, state: VMState): VMState = {
     state.ctxt.ctxt.scheduleStrand()
@@ -361,11 +357,7 @@ trait VirtualMachine {
   }
 
   def execute(op: OpNxt, state: VMState): VMState =
-    if (getNextStrand()) {
-      state.set(_ >> 'exitFlag)(true)
-    } else {
-      state
-    }
+    state.update(_ >> 'exitFlag)(if (getNextStrand()) true else _)
 
   def execute(op: OpJmp, state: VMState): VMState =
     state.set(_ >> 'pc >> 'relative)(op.n)
@@ -396,12 +388,12 @@ trait VirtualMachine {
 
     value match {
       case Left(Upcall) =>
-        state
-          .set(_ >> 'doNextThreadFlag)(true)
-      case Left(Absent) =>
+        state.set(_ >> 'doNextThreadFlag)(true)
+          
+      case Left(Absent) => {
         handleMissingBinding(key, Location.ArgReg(argno))
-        state
-          .set(_ >> 'doNextThreadFlag)(true)
+        state.set(_ >> 'doNextThreadFlag)(true)
+      }
 
       case Right(ob) =>
         state.update(_ >> 'ctxt >> 'argvec >> 'elem)(_.updated(argno, ob))
@@ -417,12 +409,12 @@ trait VirtualMachine {
 
     value match {
       case Left(Upcall) =>
-        state
-          .set(_ >> 'doNextThreadFlag)(true)
-      case Left(Absent) =>
+        state.set(_ >> 'doNextThreadFlag)(true)
+          
+      case Left(Absent) => {
         handleMissingBinding(key, Location.CtxtReg(regno))
-        state
-          .set(_ >> 'doNextThreadFlag)(true)
+        state.set(_ >> 'doNextThreadFlag)(true)
+      }
 
       case Right(ob) =>
         state.update(_ >> 'ctxt >> 'reg)(_.updated(regno, ob))
@@ -485,25 +477,28 @@ trait VirtualMachine {
     state.set(_ >> 'ctxt >> 'rslt)(state.ctxt.reg(op.r))
 
   def execute(op: OpXferRsltToDest, state: VMState): VMState = {
-    val newState = state.set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
-    import Location._;
+    state
+      .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
+      .update(_)(state => {
+        import Location._;
 
-    Location.store(newState.loc,
-                   newState.ctxt,
-                   newState.globalEnv,
-                   newState.ctxt.rslt) match {
-      case StoreFail() => newState.set(_ >> 'vmErrorFlag)(true)
+        Location.store(state.loc,
+                       state.ctxt,
+                       state.globalEnv,
+                       state.ctxt.rslt) match {
+          case StoreFail => state.set(_ >> 'vmErrorFlag)(true)
 
-      case StoreCtxt(ctxt) => newState.set(_ >> 'ctxt)(ctxt)
+          case StoreCtxt(ctxt) => state.set(_ >> 'ctxt)(ctxt)
 
-      case StoreGlobal(env) => newState.set(_ >> 'globalEnv)(env)
-    }
-  }
+          case StoreGlobal(env) => state.set(_ >> 'globalEnv)(env)
+        }
+      })
 
   def execute(op: OpXferSrcToRslt, state: VMState): VMState =
     state
       .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
-      .set(_ >> 'ctxt >> 'rslt)(Location.fetch(state.loc, state.ctxt))
+      .set(_ >> 'ctxt >> 'rslt)(
+        Location.fetch(state.loc, state.ctxt, state.globalEnv))
 
   def execute(op: OpIndLitToArg, state: VMState): VMState =
     state.update(_ >> 'ctxt >> 'argvec >> 'elem)(

@@ -1,12 +1,12 @@
 package coop.rchain.rosette
 
-case class Location(atom: Ob, genericType: Location.GenericType) extends Ob {}
+case class Location(atom: Ob, genericType: Location.GenericType) extends Ob
 
 object Location {
   import Lenses._
 
-  object PLACEHOLDER extends Location(Ob.PLACEHOLDER, LTLimbo())
-  object LIMBO extends Location(Ob.PLACEHOLDER, LTLimbo())
+  object PLACEHOLDER extends Location(Ob.PLACEHOLDER, LTLimbo)
+  object LIMBO extends Location(Ob.PLACEHOLDER, LTLimbo)
 
   sealed trait GenericType
   case class LTCtxtRegister(reg: Int) extends GenericType
@@ -19,7 +19,7 @@ object Location {
   case class LTBitField(ind: Int, level: Int, offset: Int, spanSize: Int)
       extends GenericType
   case class LTBitField00(offset: Int, spanSize: Int) extends GenericType
-  case class LTLimbo() extends GenericType
+  case object LTLimbo extends GenericType
 
   def ArgReg(a: Int): Location = PLACEHOLDER
   def CtxtReg(r: Int): Location = PLACEHOLDER
@@ -28,7 +28,7 @@ object Location {
   def fixVal(value: Ob): Int = 0
 
   sealed trait StoreResult
-  case class StoreFail() extends StoreResult
+  case object StoreFail extends StoreResult
   case class StoreCtxt(ctxt: Ctxt) extends StoreResult
   case class StoreGlobal(globalEnv: TblObject) extends StoreResult
 
@@ -42,49 +42,50 @@ object Location {
 
       case LTArgRegister(argReg) =>
         if (argReg >= k.argvec.elem.length) {
-          StoreFail()
+          StoreFail
         } else {
           StoreCtxt(k.update(_ >> 'argvec >> 'elem)(_.updated(argReg, value)))
         }
 
       case LTLexVariable(ind, level, offset) =>
         k.env.setLex(ind, level, offset, value) match {
-          case None => StoreFail()
+          case None => StoreFail
           case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
         }
 
       case LTAddrVariable(ind, level, offset) =>
         k.env.setLex(ind, level, offset, value) match {
-          case None => StoreFail()
+          case None => StoreFail
           case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
         }
 
       case LTGlobalVariable(offset) =>
         if (offset >= globalEnv.numberOfSlots()) {
-          StoreFail()
+          StoreFail
         } else {
           StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(offset, value)))
         }
 
-      case LTBitField(ind, level, offset, span) =>
+      case LTBitField(ind, level, offset, spanSize) =>
         if (isFixNum(value)) {
-          StoreFail()
+          StoreFail
         } else {
-          k.env.setField(ind, level, offset, span, fixVal(value)) match {
-            case None => StoreFail()
+          k.env.setField(ind, level, offset, spanSize, fixVal(value)) match {
+            case None => StoreFail
             case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
           }
         }
 
-      case LTBitField00(offset, span) =>
+      case LTBitField00(offset, spanSize) =>
         if (isFixNum(value)) {
-          StoreFail()
+          StoreFail
         } else {
-          k.env.setField(0, 0, offset, span, fixVal(value)) match {
-            case None => StoreFail()
+          k.env.setField(0, 0, offset, spanSize, fixVal(value)) match {
+            case None => StoreFail
             case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
           }
         }
-      case LTLimbo() => StoreFail()
+
+      case LTLimbo => StoreFail
     }
 }

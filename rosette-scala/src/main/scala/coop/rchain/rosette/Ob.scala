@@ -31,6 +31,10 @@ class Ob(val entry: Seq[Ob] = null,
     extends Base {
   def extendWith(keymeta: Ob): Ob = Ob.PLACEHOLDER
   def extendWith(keymeta: Ob, argvec: Tuple): Ob = Ob.PLACEHOLDER
+  def getAddr(ind: Int, level: Int, offset: Int): Ob = Ob.PLACEHOLDER
+  def getField(ind: Int, level: Int, offset: Int, spanSize: Int): Ob =
+    Ob.PLACEHOLDER
+  def getLex(ind: Int, level: Int, offset: Int): Ob = Ob.PLACEHOLDER
   def is(value: Ob.ObTag): Boolean = true
   def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
     Right(Ob.PLACEHOLDER)
@@ -46,10 +50,11 @@ class Ob(val entry: Seq[Ob] = null,
 }
 
 object Ob {
-  object PLACEHOLDER extends Ob
-  object NIV extends Ob
-  object FALSE extends Ob
   object DEADTHREAD extends Ob
+  object FALSE extends Ob
+  object INVALID extends Ob
+  object NIV extends Ob
+  object PLACEHOLDER extends Ob
 
   sealed trait ObTag
   case object OTptr extends ObTag
