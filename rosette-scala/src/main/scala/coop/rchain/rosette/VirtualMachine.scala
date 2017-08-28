@@ -18,7 +18,6 @@ trait VirtualMachine {
       tryAwakeSleepingStrand(state) match {
         case WaitForAsync =>
           val newState = state.set(_ >> 'doAsyncWaitFlag)(true)
-
           (false, newState)
 
         case NoWorkLeft => (true, state)
