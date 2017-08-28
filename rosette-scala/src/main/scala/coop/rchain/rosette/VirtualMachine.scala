@@ -23,12 +23,14 @@ trait VirtualMachine {
         case NoWorkLeft => (true, state)
 
         case StrandsScheduled(stateScheduled) =>
-          if (state.debug) {
+          val stateDebug = if (stateScheduled.debug) {
             state.update(_ >> 'debugInfo)(_ :+ "*** waking sleepers\n")
+          } else {
+            stateScheduled
           }
 
-          val strand = stateScheduled.strandPool.head
-          val newState = stateScheduled.update(_ >> 'strandPool)(_.tail)
+          val strand = stateDebug.strandPool.head
+          val newState = stateDebug.update(_ >> 'strandPool)(_.tail)
 
           (false, installStrand(strand, newState))
       }
@@ -73,13 +75,15 @@ trait VirtualMachine {
   }
 
   def installMonitor(monitor: Monitor, state: VMState): VMState = {
-    if (state.debug) {
+    val stateDebug = if (state.debug) {
       state.update(_ >> 'debugInfo)(_ :+ s"*** new monitor: ${monitor.id}\n")
+    } else {
+      state
     }
 
-    state.currentMonitor.stop()
+    stateDebug.currentMonitor.stop()
 
-    val newState = state
+    val newState = stateDebug
       .set(_ >> 'bytecodes)(monitor.opcodeCounts)
       .set(_ >> 'currentMonitor)(monitor)
       .set(_ >> 'debug)(monitor.tracing)
@@ -92,11 +96,13 @@ trait VirtualMachine {
   }
 
   def installCtxt(ctxt: Ctxt, state: VMState): VMState = {
-    if (state.debug) {
+    val stateDebug = if (state.debug) {
       state.update(_ >> 'debugInfo)(_ :+ "*** new strand\n")
+    } else {
+      state
     }
 
-    state
+    stateDebug
       .set(_ >> 'ctxt)(ctxt)
       .set(_ >> 'code)(ctxt.code)
       .set(_ >> 'pc >> 'relative)(ctxt.pc.relative)
