@@ -27,21 +27,22 @@ object Lenses {
 
 trait Base
 
-class Ob(val entry: Seq[Ob] = null,
-         val meta: Ob = null,
-         val slot: Seq[Ob] = null)
-    extends Base {
-  def extendWith(keymeta: Ob): Ob = Ob.PLACEHOLDER
-  def extendWith(keymeta: Ob, argvec: Tuple): Ob = Ob.PLACEHOLDER
-  def getAddr(ind: Int, level: Int, offset: Int): Ob = Ob.PLACEHOLDER
-  def getField(ind: Int, level: Int, offset: Int, spanSize: Int): Ob =
-    Ob.PLACEHOLDER
-  def getLex(ind: Int, level: Int, offset: Int): Ob = Ob.PLACEHOLDER
+trait Ob extends Base {
+  val entry: Seq[Ob]
+  val meta: Ob
+  val slot: Seq[Ob]
+  val isRblFalse = false
+
+  def extendWith(keymeta: Ob): Ob = null
+  def extendWith(keymeta: Ob, argvec: Tuple): Ob = null
+  def getAddr(ind: Int, level: Int, offset: Int): Ob = null
+  def getField(ind: Int, level: Int, offset: Int, spanSize: Int): Ob = null
+  def getLex(ind: Int, level: Int, offset: Int): Ob = null
   def is(value: Ob.ObTag): Boolean = true
   def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
-    Right(Ob.PLACEHOLDER)
+    Right(null)
   def numberOfSlots(): Int = Math.max(0, slot.length - 2)
-  def parent(): Ob = Ob.PLACEHOLDER
+  def parent(): Ob = null
   def setAddr(ind: Int, level: Int, offset: Int, value: Ob): Option[Ob] = None
   def setField(ind: Int,
                level: Int,
@@ -52,12 +53,6 @@ class Ob(val entry: Seq[Ob] = null,
 }
 
 object Ob {
-  object DEADTHREAD extends Ob
-  object FALSE extends Ob
-  object INVALID extends Ob
-  object NIV extends Ob
-  object PLACEHOLDER extends Ob
-
   sealed trait ObTag
   case object OTptr extends ObTag
   case object OTsym extends ObTag

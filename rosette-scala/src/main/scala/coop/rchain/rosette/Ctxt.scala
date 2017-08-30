@@ -13,12 +13,14 @@ case class Ctxt(argvec: Tuple,
                 selfEnv: Ob,
                 override val slot: Seq[Ob],
                 tag: Location)
-    extends Ob(entry, meta, slot) {
+    extends Ob {
   def scheduleStrand(): Unit = {}
   def ret(rslt: Ob): Boolean = true
 }
 
-object Ctxt extends Ob {
+object Ctxt {
+  def apply(tuple: Option[Tuple], ctxt: Ctxt): Ctxt = PLACEHOLDER
+
   object NIV
       extends Ctxt(null,
                    null,
@@ -47,5 +49,4 @@ object Ctxt extends Ob {
                    null,
                    null,
                    null)
-  def create(tuple: Tuple, ctxt: Ctxt): Ctxt = PLACEHOLDER
 }
