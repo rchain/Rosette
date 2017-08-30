@@ -31,7 +31,7 @@ trait Ob extends Base {
   val entry: Seq[Ob]
   val meta: Ob
   val slot: Seq[Ob]
-  val isRblFalse = false
+  val isRblFalse: Boolean = false
 
   def extendWith(keymeta: Ob): Ob = null
   def extendWith(keymeta: Ob, argvec: Tuple): Ob = null
