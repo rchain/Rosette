@@ -1,12 +1,17 @@
 package coop.rchain.rosette
 
-case class Location(atom: Ob, genericType: Location.GenericType) extends Ob
+case class Location(atom: Ob,
+                    genericType: Location.GenericType,
+                    override val entry: Seq[Ob],
+                    override val meta: Ob,
+                    override val slot: Seq[Ob])
+    extends Ob
 
 object Location {
-  import Lenses._
+  import Ob.Lenses._
 
-  object PLACEHOLDER extends Location(Ob.PLACEHOLDER, LTLimbo)
-  object LIMBO extends Location(Ob.PLACEHOLDER, LTLimbo)
+  object PLACEHOLDER extends Location(null, LTLimbo, null, null, null)
+  object LIMBO extends Location(null, LTLimbo, null, null, null)
 
   sealed trait GenericType
   case class LTCtxtRegister(reg: Int) extends GenericType
@@ -23,7 +28,7 @@ object Location {
 
   def ArgReg(a: Int): Location = PLACEHOLDER
   def CtxtReg(r: Int): Location = PLACEHOLDER
-  def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob = Ob.PLACEHOLDER
+  def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob = null
   def isFixNum(value: Ob): Boolean = false
   def fixVal(value: Ob): Int = 0
 

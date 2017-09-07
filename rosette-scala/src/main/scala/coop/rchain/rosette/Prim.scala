@@ -1,7 +1,10 @@
 package coop.rchain.rosette
 
-class Prim extends Ob {
-  def dispatchHelper(ctxt: Ctxt): Ob = Ob.PLACEHOLDER
+case class Prim(override val entry: Seq[Ob],
+                override val meta: Ob,
+                override val slot: Seq[Ob])
+    extends Ob {
+  def dispatchHelper(ctxt: Ctxt): Either[RblError, Ob] = Right(null)
 }
 
 object Prim {

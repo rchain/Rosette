@@ -1,14 +1,14 @@
 package coop.rchain.rosette
 
-import shapeless._
-import shapeless.OpticDefns.RootLens
+sealed trait RblError
+case object DeadThread extends RblError
 
 trait VirtualMachine {
 
-  def unwindAndApplyPrim(prim: Prim): Ob = Ob.PLACEHOLDER
-  def handleException(result: Ob, op: Op, loc: Location): Ob = Ob.PLACEHOLDER
-  def handleFormalsMismatch(formals: Template): Ob = Ob.PLACEHOLDER
-  def handleMissingBinding(key: Ob, argReg: Location): Ob = Ob.PLACEHOLDER
+  def unwindAndApplyPrim(prim: Prim): Either[RblError, Ob] = Right(null)
+  def handleException(result: Ob, op: Op, loc: Location): Ob = null
+  def handleFormalsMismatch(formals: Template): Ob = null
+  def handleMissingBinding(key: Ob, argReg: Location): Ob = null
   def getNextStrand(): Boolean = true
   val vmLiterals: Seq[Ob] = new Array[Ob](0)
 
@@ -116,7 +116,7 @@ trait VirtualMachine {
     state.set(_ >> 'exitFlag)(true)
 
   def execute(op: OpPush, state: VMState): VMState =
-    state.set(_ >> 'ctxt)(Ctxt.create(Tuple.NIL, state.ctxt))
+    state.set(_ >> 'ctxt)(Ctxt(None, state.ctxt))
 
   def execute(op: OpPop, state: VMState): VMState =
     state.set(_ >> 'ctxt)(state.ctxt.ctxt)
@@ -125,10 +125,10 @@ trait VirtualMachine {
     state.set(_ >> 'ctxt >> 'nargs)(op.n)
 
   def execute(op: OpAlloc, state: VMState): VMState =
-    state.set(_ >> 'ctxt >> 'argvec)(Tuple.create(op.n, Ctxt.NIV))
+    state.set(_ >> 'ctxt >> 'argvec)(Tuple(op.n, None))
 
   def execute(op: OpPushAlloc, state: VMState): VMState =
-    state.update(_ >> 'ctxt)(Ctxt.create(Tuple.create(op.n, Ob.NIV), _))
+    state.update(_ >> 'ctxt)(Ctxt(Some(Tuple(op.n, None)), _))
 
   def execute(op: OpExtend, state: VMState): VMState = {
     val formals = state.code.lit(op.v).asInstanceOf[Template]
@@ -220,25 +220,29 @@ trait VirtualMachine {
         val result = if (op.u) { unwindAndApplyPrim(prim) } else {
           prim.dispatchHelper(state.ctxt)
         }
-        if (result == Ob.DEADTHREAD) {
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else if (result.is(Ob.OTsysval)) {
-          handleException(result, op, state.loc)
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else {
-          import Location._
+        result match {
+          case Right(ob) =>
+            if (ob.is(Ob.OTsysval)) {
+              handleException(ob, op, state.loc)
+              state.set(_ >> 'doNextThreadFlag)(true)
+            } else {
+              import Location._
 
-          Location
-            .store(state.loc, state.ctxt, state.globalEnv, result) match {
-            case StoreFail => state.set(_ >> 'vmErrorFlag)(true)
+              Location
+                .store(state.loc, state.ctxt, state.globalEnv, ob) match {
+                case StoreFail => state.set(_ >> 'vmErrorFlag)(true)
 
-            case StoreCtxt(ctxt) =>
-              state
-                .set(_ >> 'ctxt)(ctxt)
-                .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+                case StoreCtxt(ctxt) =>
+                  state
+                    .set(_ >> 'ctxt)(ctxt)
+                    .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
 
-            case StoreGlobal(env) => state.set(_ >> 'globalEnv)(env)
-          }
+                case StoreGlobal(env) => state.set(_ >> 'globalEnv)(env)
+              }
+            }
+
+          case Left(DeadThread) =>
+            state.set(_ >> 'doNextThreadFlag)(true)
         }
       })
 
@@ -252,17 +256,21 @@ trait VirtualMachine {
           prim.dispatchHelper(state.ctxt)
         }
 
-        if (result == Ob.DEADTHREAD) {
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else if (result.is(Ob.OTsysval)) {
-          handleException(result, op, state.loc)
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else if (argno >= state.ctxt.argvec.elem.length) {
-          state.set(_ >> 'vmErrorFlag)(true)
-        } else {
-          state
-            .update(_ >> 'ctxt >> 'argvec >> 'elem)(_.updated(argno, result))
-            .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+        result match {
+          case Right(ob) =>
+            if (ob.is(Ob.OTsysval)) {
+              handleException(ob, op, state.loc)
+              state.set(_ >> 'doNextThreadFlag)(true)
+            } else if (argno >= state.ctxt.argvec.elem.length) {
+              state.set(_ >> 'vmErrorFlag)(true)
+            } else {
+              state
+                .update(_ >> 'ctxt >> 'argvec >> 'elem)(_.updated(argno, ob))
+                .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+            }
+
+          case Left(DeadThread) =>
+            state.set(_ >> 'doNextThreadFlag)(true)
         }
 
       })
@@ -277,15 +285,19 @@ trait VirtualMachine {
           prim.dispatchHelper(state.ctxt)
         }
 
-        if (result == Ob.DEADTHREAD) {
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else if (result.is(Ob.OTsysval)) {
-          handleException(result, op, Location.CtxtReg(regno))
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else {
-          state
-            .update(_ >> 'ctxt >> 'reg)(_.updated(regno, result))
-            .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+        result match {
+          case Right(ob) =>
+            if (ob.is(Ob.OTsysval)) {
+              handleException(ob, op, Location.CtxtReg(regno))
+              state.set(_ >> 'doNextThreadFlag)(true)
+            } else {
+              state
+                .update(_ >> 'ctxt >> 'reg)(_.updated(regno, ob))
+                .update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+            }
+
+          case Left(DeadThread) =>
+            state.set(_ >> 'doNextThreadFlag)(true)
         }
 
       })
@@ -299,15 +311,17 @@ trait VirtualMachine {
           prim.dispatchHelper(state.ctxt)
         }
 
-        if (result == Ob.DEADTHREAD) {
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else if (result.is(Ob.OTsysval)) {
-          handleException(result, op, Location.LIMBO)
-          state.set(_ >> 'doNextThreadFlag)(true)
-        } else {
-          state.update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+        result match {
+          case Right(ob) =>
+            if (ob.is(Ob.OTsysval)) {
+              handleException(ob, op, Location.LIMBO)
+              state.set(_ >> 'doNextThreadFlag)(true)
+            } else {
+              state.update(_ >> 'doNextThreadFlag)(if (op.n) true else _)
+            }
+          case Left(DeadThread) =>
+            state.set(_ >> 'doNextThreadFlag)(true)
         }
-
       })
 
   def execute(op: OpRtn, state: VMState): VMState =
@@ -375,11 +389,8 @@ trait VirtualMachine {
   }
 
   def execute(op: OpJmpFalse, state: VMState): VMState =
-    if (state.ctxt.rslt == Ob.FALSE) {
-      state.set(_ >> 'pc >> 'relative)(op.n)
-    } else {
-      state
-    }
+    state.update(_ >> 'pc >> 'relative)(
+      if (state.ctxt.rslt.isRblFalse) op.n else _)
 
   def execute(op: OpLookupToArg, state: VMState): VMState = {
     val argno = op.a
