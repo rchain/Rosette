@@ -26,7 +26,7 @@ case class VMState(bytecodes: Map[Op, Long],
                    vmErrorFlag: Boolean = false,
                    exitFlag: Boolean = false,
                    obCounts: Long = 0,
-                   GlobalEnv: Env)
+                   globalEnv: TblObject = TblObject.PLACEHOLDER)
     extends {
   def set[T](f: RootLens[VMState] ⇒ Lens[VMState, T])(value: T): VMState =
     f(lens[VMState]).set(this)(value)
@@ -34,4 +34,6 @@ case class VMState(bytecodes: Map[Op, Long],
   def update[T](f: RootLens[VMState] ⇒ Lens[VMState, T])(
       value: T => T): VMState =
     f(lens[VMState]).modify(this)(value)
+
+  def updateSelf[T](value: VMState => VMState): VMState = value(this)
 }

@@ -1,52 +1,61 @@
 package coop.rchain.rosette
 
 case class Ctxt(argvec: Tuple,
+                code: Code,
                 ctxt: Ctxt,
+                override val entry: Seq[Ob],
+                env: Ob,
+                override val meta: Ob,
+                monitor: Monitor,
                 nargs: Int,
                 outstanding: Int,
-                tag: Location,
-                rslt: Ob,
-                env: Env,
-                selfEnv: Env,
-                reg: Seq[Ob],
                 pc: PC,
-                code: Code,
-                monitor: Monitor)
+                reg: Seq[Ob],
+                rslt: Ob,
+                selfEnv: Ob,
+                override val slot: Seq[Ob],
+                tag: Location)
     extends Ob {
-  def parent(): Env = Env.PLACEHOLDER
+  def ret(rslt: Ob): Boolean = true
 
   def scheduleStrand(state: VMState): VMState =
     state.update(_ >> 'strandPool)(_ :+ this)
 
-  def ret(rslt: Ob): Boolean = true
 }
 
-object Ctxt extends Ob {
+object Ctxt {
+  def apply(tuple: Option[Tuple], ctxt: Ctxt): Ctxt = PLACEHOLDER
+
   object NIV
       extends Ctxt(null,
                    null,
+                   null,
+                   null,
+                   null,
+                   null,
+                   null,
                    0,
                    0,
                    null,
                    null,
                    null,
-                   null,
-                   new Array[Ob](0),
                    null,
                    null,
                    null)
   object PLACEHOLDER
       extends Ctxt(null,
                    null,
+                   null,
+                   null,
+                   null,
+                   null,
+                   null,
                    0,
                    0,
                    null,
                    null,
                    null,
-                   null,
-                   new Array[Ob](0),
                    null,
                    null,
                    null)
-  def create(tuple: Tuple, ctxt: Ctxt): Ctxt = PLACEHOLDER
 }
