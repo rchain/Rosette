@@ -1,10 +1,12 @@
 package coop.rchain.rosette
 
 case class Ctxt(argvec: Tuple,
+                code: Code,
                 ctxt: Ctxt,
                 override val entry: Seq[Ob],
                 env: Ob,
                 override val meta: Ob,
+                monitor: Monitor,
                 nargs: Int,
                 outstanding: Int,
                 pc: PC,
@@ -14,8 +16,11 @@ case class Ctxt(argvec: Tuple,
                 override val slot: Seq[Ob],
                 tag: Location)
     extends Ob {
-  def scheduleStrand(): Unit = {}
   def ret(rslt: Ob): Boolean = true
+
+  def scheduleStrand(state: VMState): VMState =
+    state.update(_ >> 'strandPool)(_ :+ this)
+
 }
 
 object Ctxt {
@@ -23,6 +28,8 @@ object Ctxt {
 
   object NIV
       extends Ctxt(null,
+                   null,
+                   null,
                    null,
                    null,
                    null,
@@ -37,6 +44,8 @@ object Ctxt {
                    null)
   object PLACEHOLDER
       extends Ctxt(null,
+                   null,
+                   null,
                    null,
                    null,
                    null,

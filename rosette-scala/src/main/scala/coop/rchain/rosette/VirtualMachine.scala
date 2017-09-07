@@ -3,14 +3,113 @@ package coop.rchain.rosette
 sealed trait RblError
 case object DeadThread extends RblError
 
+sealed trait Work
+case object NoWorkLeft extends Work
+case object WaitForAsync extends Work
+case class StrandsScheduled(state: VMState) extends Work
+
 trait VirtualMachine {
 
   def unwindAndApplyPrim(prim: Prim): Either[RblError, Ob] = Right(null)
   def handleException(result: Ob, op: Op, loc: Location): Ob = null
   def handleFormalsMismatch(formals: Template): Ob = null
   def handleMissingBinding(key: Ob, argReg: Location): Ob = null
-  def getNextStrand(): Boolean = true
   val vmLiterals: Seq[Ob] = new Array[Ob](0)
+
+  def getNextStrand(state: VMState): (Boolean, VMState) =
+    if (state.strandPool.isEmpty) {
+      tryAwakeSleepingStrand(state) match {
+        case WaitForAsync =>
+          val newState = state.set(_ >> 'doAsyncWaitFlag)(true)
+          (false, newState)
+
+        case NoWorkLeft => (true, state)
+
+        case StrandsScheduled(stateScheduled) =>
+          val stateDebug = if (stateScheduled.debug) {
+            state.update(_ >> 'debugInfo)(_ :+ "*** waking sleepers\n")
+          } else {
+            stateScheduled
+          }
+
+          val strand = stateDebug.strandPool.head
+          val newState = stateDebug.update(_ >> 'strandPool)(_.tail)
+
+          (false, installStrand(strand, newState))
+      }
+    } else {
+      val strand = state.strandPool.head
+      val newState = state.update(_ >> 'strandPool)(_.tail)
+
+      (false, installStrand(strand, newState))
+    }
+
+  def tryAwakeSleepingStrand(state: VMState): Work =
+    if (state.sleeperPool.isEmpty) {
+      if (state.nsigs == 0) {
+        NoWorkLeft
+      } else {
+        WaitForAsync
+      }
+    } else {
+
+      /** Schedule all sleeping strands
+        *
+        * Pop strand from sleeperPool and enqueue
+        * to strandPool
+        */
+      val scheduled = state.sleeperPool
+        .foldLeft(state) {
+          case (st, sleeper) =>
+            sleeper.scheduleStrand(st)
+        }
+        .set(_ >> 'sleeperPool)(Seq())
+
+      StrandsScheduled(scheduled)
+    }
+
+  def installStrand(strand: Ctxt, state: VMState): VMState = {
+    val stateInstallMonitor =
+      if (strand.monitor != state.currentMonitor)
+        installMonitor(strand.monitor, state)
+      else state
+
+    installCtxt(strand, stateInstallMonitor)
+  }
+
+  def installMonitor(monitor: Monitor, state: VMState): VMState = {
+    val stateDebug = if (state.debug) {
+      state.update(_ >> 'debugInfo)(_ :+ s"*** new monitor: ${monitor.id}\n")
+    } else {
+      state
+    }
+
+    stateDebug.currentMonitor.stop()
+
+    val newState = stateDebug
+      .set(_ >> 'bytecodes)(monitor.opcodeCounts)
+      .set(_ >> 'currentMonitor)(monitor)
+      .set(_ >> 'debug)(monitor.tracing)
+      .set(_ >> 'obCounts)(monitor.obCounts)
+
+    newState.currentMonitor
+      .start()
+
+    newState
+  }
+
+  def installCtxt(ctxt: Ctxt, state: VMState): VMState = {
+    val stateDebug = if (state.debug) {
+      state.update(_ >> 'debugInfo)(_ :+ "*** new strand\n")
+    } else {
+      state
+    }
+
+    stateDebug
+      .set(_ >> 'ctxt)(ctxt)
+      .set(_ >> 'code)(ctxt.code)
+      .set(_ >> 'pc >> 'relative)(ctxt.pc.relative)
+  }
 
   def executeSeq(opCodes: Seq[Op], state: VMState): VMState = {
     var pc = 0
@@ -19,7 +118,10 @@ trait VirtualMachine {
 
     while (pc < opCodes.size && !exit) {
       val op = opCodes(pc)
+
       currentState = modifyFlags(executeDispatch(op, state))
+        .update(_ >> 'bytecodes)(m =>
+          m.updated(op, currentState.bytecodes.getOrElse(op, 0.toLong) + 1))
 
       pc = currentState.pc.relative
 
@@ -367,13 +469,20 @@ trait VirtualMachine {
         }
       })
 
-  def execute(op: OpUpcallResume, state: VMState): VMState = {
-    state.ctxt.ctxt.scheduleStrand()
-    state.set(_ >> 'doNextThreadFlag)(true)
-  }
+  def execute(op: OpUpcallResume, state: VMState): VMState =
+    state.ctxt.ctxt
+      .scheduleStrand(state)
+      .set(_ >> 'doNextThreadFlag)(true)
 
-  def execute(op: OpNxt, state: VMState): VMState =
-    state.update(_ >> 'exitFlag)(if (getNextStrand()) true else _)
+  def execute(op: OpNxt, state: VMState): VMState = {
+    val (exit, newState) = getNextStrand(state)
+
+    if (exit) {
+      newState.set(_ >> 'exitFlag)(true)
+    } else {
+      newState
+    }
+  }
 
   def execute(op: OpJmp, state: VMState): VMState =
     state.set(_ >> 'pc >> 'relative)(op.n)
