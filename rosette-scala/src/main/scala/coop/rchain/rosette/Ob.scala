@@ -1,7 +1,5 @@
 package coop.rchain.rosette
 
-// TODO: merge from dev-tymm-fix-ob-trait
-
 import shapeless._
 import shapeless.OpticDefns.RootLens
 
