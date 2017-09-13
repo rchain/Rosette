@@ -3,7 +3,6 @@ package coop.rchain.rosette
 case class Ctxt(argvec: Tuple,
                 code: Code,
                 ctxt: Ctxt,
-                override val entry: Seq[Ob],
                 env: Ob,
                 override val meta: Ob,
                 monitor: Monitor,
@@ -33,7 +32,6 @@ object Ctxt {
                    null,
                    null,
                    null,
-                   null,
                    0,
                    0,
                    null,
@@ -44,7 +42,6 @@ object Ctxt {
                    null)
   object PLACEHOLDER
       extends Ctxt(null,
-                   null,
                    null,
                    null,
                    null,

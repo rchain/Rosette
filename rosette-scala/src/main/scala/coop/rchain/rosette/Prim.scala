@@ -1,9 +1,6 @@
 package coop.rchain.rosette
 
-case class Prim(override val entry: Seq[Ob],
-                override val meta: Ob,
-                override val slot: Seq[Ob])
-    extends Ob {
+case class Prim(override val meta: Ob, override val slot: Seq[Ob]) extends Ob {
   def dispatchHelper(ctxt: Ctxt): Either[RblError, Ob] = Right(null)
 }
 

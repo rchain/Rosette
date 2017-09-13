@@ -5,7 +5,6 @@ case class Monitor(id: Ob,
                    opcodeCounts: Map[Op, Long],
                    obCounts: Long,
                    tracing: Boolean,
-                   override val entry: Seq[Ob],
                    override val meta: Ob,
                    override val slot: Seq[Ob])
     extends Ob {
@@ -17,5 +16,5 @@ case class Monitor(id: Ob,
 
 object Monitor {
   def apply(id: Ob): Monitor =
-    new Monitor(id, Timer(), Map(), 0, tracing = false, null, null, null)
+    new Monitor(id, Timer(), Map(), 0, tracing = false, null, null)
 }

@@ -10,7 +10,6 @@ case object Upcall extends LookupError
 trait Base
 
 trait Ob extends Base {
-  val entry: Seq[Ob]
   val meta: Ob
   val slot: Seq[Ob]
   val isRblFalse = false
@@ -46,6 +45,11 @@ object Ob {
   case object OTniv extends ObTag
   case object OTsysval extends ObTag
   case object OTlocation extends ObTag
+
+  case object INVALID extends Ob {
+    override val meta = null
+    override val slot = null
+  }
 
   object Lenses {
     def setA[T, A](a: A)(f: RootLens[A] ⇒ Lens[A, T])(value: T): A =

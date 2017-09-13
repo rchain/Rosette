@@ -2,7 +2,6 @@ package coop.rchain.rosette
 
 case class Location(atom: Ob,
                     genericType: Location.GenericType,
-                    override val entry: Seq[Ob],
                     override val meta: Ob,
                     override val slot: Seq[Ob])
     extends Ob
@@ -10,8 +9,8 @@ case class Location(atom: Ob,
 object Location {
   import Ob.Lenses._
 
-  object PLACEHOLDER extends Location(null, LTLimbo, null, null, null)
-  object LIMBO extends Location(null, LTLimbo, null, null, null)
+  object PLACEHOLDER extends Location(null, LTLimbo, null, null)
+  object LIMBO extends Location(null, LTLimbo, null, null)
 
   sealed trait GenericType
   case class LTCtxtRegister(reg: Int) extends GenericType
@@ -28,7 +27,6 @@ object Location {
 
   def ArgReg(a: Int): Location = PLACEHOLDER
   def CtxtReg(r: Int): Location = PLACEHOLDER
-  def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob = null
   def isFixNum(value: Ob): Boolean = false
   def fixVal(value: Ob): Int = 0
 
@@ -59,7 +57,7 @@ object Location {
         }
 
       case LTAddrVariable(ind, level, offset) =>
-        k.env.setLex(ind, level, offset, value) match {
+        k.env.setAddr(ind, level, offset, value) match {
           case Some(env) => StoreCtxt(k.set(_ >> 'env)(env))
           case None => StoreFail
         }
@@ -92,5 +90,43 @@ object Location {
         }
 
       case LTLimbo => StoreFail
+    }
+
+  def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob =
+    loc.genericType match {
+      case LTCtxtRegister(reg) =>
+        if (reg < k.reg.size) {
+          k.reg(reg)
+        } else {
+          Ob.INVALID
+        }
+
+      case LTArgRegister(argReg) =>
+        if (argReg < k.argvec.elem.size) {
+          k.argvec.elem(argReg)
+        } else {
+          Ob.INVALID
+        }
+
+      case LTLexVariable(ind, level, offset) =>
+        k.env.getLex(ind, level, offset)
+
+      case LTAddrVariable(ind, level, offset) =>
+        k.env.getAddr(ind, level, offset)
+
+      case LTGlobalVariable(offset) =>
+        if (offset < globalEnv.numberOfSlots()) {
+          globalEnv.slot(offset)
+        } else {
+          Ob.INVALID
+        }
+
+      case LTBitField(ind, level, offset, spanSize) =>
+        k.env.getField(ind, level, offset, spanSize)
+
+      case LTBitField00(offset, spanSize) =>
+        k.env.getField(0, 0, offset, spanSize)
+
+      case LTLimbo => Ob.INVALID
     }
 }
