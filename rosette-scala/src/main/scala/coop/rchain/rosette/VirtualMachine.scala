@@ -499,7 +499,7 @@ trait VirtualMachine {
 
   def execute(op: OpJmpFalse, state: VMState): VMState =
     state.update(_ >> 'pc >> 'relative)(
-      if (state.ctxt.rslt.isRblFalse) op.n else _)
+      if (state.ctxt.rslt == Ob.RBLFALSE) op.n else _)
 
   def execute(op: OpLookupToArg, state: VMState): VMState = {
     val argno = op.a

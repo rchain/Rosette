@@ -13,7 +13,6 @@ trait Ob extends Base {
   val entry: Seq[Ob]
   val meta: Ob
   val slot: Seq[Ob]
-  val isRblFalse = false
 
   def extendWith(keymeta: Ob): Ob = null
   def extendWith(keymeta: Ob, argvec: Tuple): Ob = null
@@ -36,6 +35,12 @@ trait Ob extends Base {
 }
 
 object Ob {
+  object RBLFALSE extends Ob {
+    override val entry = null
+    override val meta = null
+    override val slot = null
+  }
+
   sealed trait ObTag
   case object OTptr extends ObTag
   case object OTsym extends ObTag
