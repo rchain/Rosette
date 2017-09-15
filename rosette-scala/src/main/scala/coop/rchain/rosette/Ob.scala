@@ -16,7 +16,11 @@ trait Ob extends Base {
   def extendWith(keymeta: Ob): Ob = null
   def extendWith(keymeta: Ob, argvec: Tuple): Ob = null
   def getAddr(ind: Int, level: Int, offset: Int): Ob = null
-  def getField(ind: Int, level: Int, offset: Int, spanSize: Int): Ob =
+  def getField(ind: Int,
+               level: Int,
+               offset: Int,
+               spanSize: Int,
+               sign: Int): Ob =
     null
   def getLex(ind: Int, level: Int, offset: Int): Ob = null
   def is(value: Ob.ObTag): Boolean = true
@@ -34,12 +38,6 @@ trait Ob extends Base {
 }
 
 object Ob {
-  object RBLFALSE extends Ob {
-    override val entry = null
-    override val meta = null
-    override val slot = null
-  }
-
   sealed trait ObTag
   case object OTptr extends ObTag
   case object OTsym extends ObTag
@@ -52,6 +50,11 @@ object Ob {
   case object OTlocation extends ObTag
 
   case object INVALID extends Ob {
+    override val meta = null
+    override val slot = null
+  }
+
+  object RBLFALSE extends Ob {
     override val meta = null
     override val slot = null
   }
