@@ -45,7 +45,7 @@ case class Tuple(elem: Seq[Ob],
   override def matches(msg: Ctxt): Boolean = {
     val n = this.elem.size
 
-    if (n > 0 && n <= msg.nargs) {
+    if (n > 0 && n <= msg.argvec.elem.size) {
       if (this.elem.head != msg.trgt) {
         false
       } else {
@@ -63,13 +63,9 @@ case class Tuple(elem: Seq[Ob],
 
         this.elem
           .drop(1)
-          .zip(Stream from 0)
+          .zip(msg.argvec.elem)
           .forall {
-            case (e, i) =>
-              msg.arg(i) match {
-                case Some(ob) => ob == e
-                case None => false
-              }
+            case (e, arg) => e == arg
           }
       }
     } else {
@@ -86,14 +82,14 @@ case class Tuple(elem: Seq[Ob],
       if (n > 0 && n <= msg.elem.size) {
 
         this.elem
-          .zip(Stream from 0)
+          .zip(msg.elem)
           .forall {
-            case (e, i) =>
-              if (e != msg.elem(i) && e != Ob.NIV) {
+            case (e, msgElem) =>
+              if (e != msgElem && e != Ob.NIV) {
                 // TODO:
-                if (e.isA[Tuple] && msg.elem(i).isA[Tuple]) {
+                if (e.isA[Tuple] && msgElem.isA[Tuple]) {
                   if (e.asInstanceOf[Tuple]
-                        .matches(msg.elem(i).asInstanceOf[Tuple])) {
+                        .matches(msgElem.asInstanceOf[Tuple])) {
                     true
                   } else false
                 } else false
