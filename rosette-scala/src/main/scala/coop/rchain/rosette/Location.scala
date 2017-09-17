@@ -9,6 +9,8 @@ case class Location(atom: Ob,
 object Location {
   import Ob.Lenses._
 
+  val NumberOfCtxtRegs = 10
+
   object PLACEHOLDER extends Location(null, LTLimbo, null, null)
   object LIMBO extends Location(null, LTLimbo, null, null)
 
@@ -100,7 +102,7 @@ object Location {
   def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob =
     loc.genericType match {
       case LTCtxtRegister(reg) =>
-        if (reg < k.reg.size) {
+        if (reg < Location.NumberOfCtxtRegs) {
           k.reg(reg)
         } else {
           Ob.INVALID
