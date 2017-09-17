@@ -28,13 +28,13 @@ trait Ob extends Base {
     Right(null)
   def numberOfSlots(): Int = Math.max(0, slot.length - 2)
   def parent(): Ob = null
-  def setAddr(ind: Int, level: Int, offset: Int, value: Ob): Option[Ob] = None
+  def setAddr(ind: Int, level: Int, offset: Int, value: Ob): Ob = null
   def setField(ind: Int,
                level: Int,
                offset: Int,
                spanSize: Int,
-               value: Int): Option[Ob] = None
-  def setLex(ind: Int, level: Int, offset: Int, value: Ob): Option[Ob] = None
+               value: Int): Ob = null
+  def setLex(ind: Int, level: Int, offset: Int, value: Ob): Ob = null
 }
 
 object Ob {
@@ -48,6 +48,11 @@ object Ob {
   case object OTniv extends ObTag
   case object OTsysval extends ObTag
   case object OTlocation extends ObTag
+
+  case object ABSENT extends Ob {
+    override val meta = null
+    override val slot = null
+  }
 
   case object INVALID extends Ob {
     override val meta = null

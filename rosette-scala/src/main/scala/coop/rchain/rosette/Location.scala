@@ -136,4 +136,88 @@ object Location {
 
       case LTLimbo => Ob.INVALID
     }
+    
+  def printRep(loc: Location): String =
+    loc.genericType match {
+      case LTCtxtRegister(reg) =>
+        if (0 < reg && reg < Location.NumberOfCtxtRegs) {
+          names(reg)
+        } else {
+          s"unknown ctxt register 0x$reg%x"
+        }
+
+      case LTArgRegister(argReg) =>
+        s"arg[$argReg]"
+
+      case LTLexVariable(indirect, level, offset) => {
+        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+        s"addr[$level,$offsetStr]"
+      }
+
+      case LTAddrVariable(indirect, level, offset) => {
+        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+        s"addr[$level,$offsetStr]"
+      }
+
+      case LTGlobalVariable(offset) =>
+        s"global[$offset]"
+      
+      case LTBitField(indirect, level, offset, spanSize, sign) => {
+        val signStr = if (sign != 0) "s" else "u"
+        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+        s"${signStr}fld[$level,$offsetStr,$spanSize]"
+      }
+
+      case LTBitField00(offset, spanSize, sign) => {
+        val signStr = if (sign != 0) "s" else "u"
+        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+        s"${signStr}fld[$offsetStr,$spanSize]"
+      }
+
+      case LTLimbo => "limbo"
+    }
+
+
+  def valWRT(loc: Location, v: Ob, globalEnv: TblObject): Ob =
+    loc.genericType match {
+      case LTLexVariable(indirect, level, offset) => 
+        v.getLex(indirect, level, offset)
+
+      case LTAddrVariable(indirect, level, offset) => 
+        v.getAddr(indirect, level, offset)
+
+      case LTGlobalVariable(offset) =>
+        globalEnv.getLex(1, 0, offset)
+    
+      case LTBitField(indirect, level, offset, spanSize, sign) => 
+        v.getField(indirect, level, offset, spanSize, sign)
+
+      case LTBitField00(offset, spanSize, sign) =>
+        v.getField(0, 0, offset, spanSize, sign)
+
+      case LTLimbo => Ob.ABSENT
+      
+      case _ => suicide("valWrt")
+    }
+    
+    
+  def setValWrt(loc: Location, v: Ob, globalEnv: TblObject, value: Ob): Ob =
+    loc.genericType match {
+      case LTLexVariable(indirect, level, offset) => 
+        v.setLex(indirect, level, offset, value)
+
+      case LTAddrVariable(indirect, level, offset) => 
+        v.setAddr(indirect, level, offset, value)
+
+      case LTGlobalVariable(offset) =>
+        globalEnv.setLex(1, 0, offset, value)
+    
+      case LTBitField(indirect, level, offset, spanSize, sign) => 
+        v.setField(indirect, level, offset, spanSize, sign, value)
+
+      case LTBitField00(offset, spanSize, sign) =>
+        v.setField(0, 0, offset, spanSize, sign, value)
+
+      case _ => suicide("setValWrt")
+    }
 }
