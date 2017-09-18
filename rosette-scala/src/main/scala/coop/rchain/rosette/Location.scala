@@ -27,6 +27,7 @@ object Location {
                         offset: Int,
                         spanSize: Int,
                         sign: Int = 0)
+                        sign: Int)
       extends GenericType
   case class LTBitField00(offset: Int, spanSize: Int, sign: Int)
       extends GenericType
@@ -99,6 +100,7 @@ object Location {
       case LTLimbo => StoreFail
     }
 
+
   def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob =
     loc.genericType match {
       case LTCtxtRegister(reg) =>
@@ -136,6 +138,7 @@ object Location {
 
       case LTLimbo => Ob.INVALID
     }
+
 
   def printRep(loc: Location): String = {
     val names = List("rslt",
