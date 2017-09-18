@@ -1,6 +1,6 @@
 package coop.rchain.rosette
 
-case class TblObject(override val entry: Seq[Ob],
+case class TblObject(entry: Seq[Ob],
                      override val meta: Ob,
                      override val slot: Seq[Ob])
     extends Ob
