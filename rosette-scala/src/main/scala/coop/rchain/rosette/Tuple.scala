@@ -86,8 +86,10 @@ case class Tuple(elem: Seq[Ob],
           .forall {
             case (e, msgElem) =>
               if (e != msgElem && e != Ob.NIV) {
-                // TODO:
-                if (e.isA[Tuple] && msgElem.isA[Tuple]) {
+                if (e.meta.isInstanceOf[Tuple]
+                    && msgElem.meta.isInstanceOf[Tuple]
+                    && e.isInstanceOf[Tuple]
+                    && msgElem.isInstanceOf[Tuple]) {
                   if (e.asInstanceOf[Tuple]
                         .matches(msgElem.asInstanceOf[Tuple])) {
                     true

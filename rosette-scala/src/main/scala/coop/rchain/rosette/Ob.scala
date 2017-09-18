@@ -27,10 +27,6 @@ trait Ob extends Base {
     null
   def getLex(ind: Int, level: Int, offset: Int): Ob = null
   def is(value: Ob.ObTag): Boolean = true
-  def isA[T]: Boolean = this.meta match {
-    case _: T => true
-    case _ => false
-  }
   def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
     Right(null)
   def matches(ctxt: Ctxt): Boolean = false
