@@ -215,7 +215,7 @@ trait VirtualMachine {
     }
 
   def execute(op: OpHalt, state: VMState): VMState =
-    state.set(_ >> 'exitFlag)(true)
+    state.set(_ >> 'exitFlag)(true).set(_ >> 'exitCode)(0)
 
   def execute(op: OpPush, state: VMState): VMState =
     state.set(_ >> 'ctxt)(Ctxt(None, state.ctxt))
@@ -478,7 +478,7 @@ trait VirtualMachine {
     val (exit, newState) = getNextStrand(state)
 
     if (exit) {
-      newState.set(_ >> 'exitFlag)(true)
+      newState.set(_ >> 'exitFlag)(true).set(_ >> 'exitCode)(0)
     } else {
       newState
     }
@@ -641,5 +641,5 @@ trait VirtualMachine {
     state.update(_ >> 'ctxt >> 'reg)(_.updated(op.r, vmLiterals(op.v)))
 
   def execute(op: OpUnknown, state: VMState): VMState =
-    state.set(_ >> 'doNextThreadFlag)(true)
+    state.set(_ >> 'exitFlag)(true).set(_ >> 'exitCode)(1)
 }
