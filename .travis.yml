@@ -1,0 +1,18 @@
+language: scala
+jdk: oraclejdk8
+scala: 2.12.3
+
+before_script: cd rosette-scala
+
+branches:
+  only:
+    - dev
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+notifications:
+  email:
+    on_success: never
