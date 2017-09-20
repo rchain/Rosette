@@ -1,18 +1,35 @@
 package coop.rchain.rosette
 
-case class Location(atom: Ob,
-                    genericType: Location.GenericType,
-                    override val meta: Ob,
-                    override val slot: Seq[Ob])
-    extends Ob
+case class Location(data: Either[Ob, Location.GenericType])
 
 object Location {
   import Ob.Lenses._
 
   val NumberOfCtxtRegs = 10
+  val CRN_Rslt = 0
+  val CRN_Trgt = 1
+  val CRN_Argvec = 2
+  val CRN_Env = 3
+  val CRN_Code = 4
+  val CRN_Ctxt = 5
+  val CRN_Self = 6
+  val CRN_SelfEnv = 7
+  val CRN_Rcvr = 8
+  val CRN_Monitor = 9
 
-  object PLACEHOLDER extends Location(null, LTLimbo, null, null)
-  object LIMBO extends Location(null, LTLimbo, null, null)
+  val ArgRegIndexSize = 8
+  val MaxArgs = (1 << ArgRegIndexSize) - 1
+  val LexLevelSize = 5
+  val LexOffsetSize = 14
+  val GlobalOffsetSize = 16
+  val BitFieldLevelSize = 4
+  val BitFieldOffsetSize = 12
+  val BitFieldSpanSize = 5
+  val BitField00OffsetSize = 17
+  val BitField00SpanSize = 5
+
+  object PLACEHOLDER extends Location(Right(LTLimbo))
+  object LIMBO extends Location(Right(LTLimbo))
 
   sealed trait GenericType
   case class LTCtxtRegister(reg: Int) extends GenericType
@@ -32,8 +49,6 @@ object Location {
       extends GenericType
   case object LTLimbo extends GenericType
 
-  def ArgReg(a: Int): Location = PLACEHOLDER
-  def CtxtReg(r: Int): Location = PLACEHOLDER
   def isFixNum(value: Ob): Boolean = false
   def fixVal(value: Ob): Int = 0
 
@@ -46,95 +61,107 @@ object Location {
             k: Ctxt,
             globalEnv: TblObject,
             value: Ob): StoreResult =
-    loc.genericType match {
-      case LTCtxtRegister(reg) =>
-        StoreCtxt(k.update(_ >> 'reg)(_.updated(reg, value)))
+    loc.data match {
+      case Left(_) => StoreFail
+      case Right(genericType) =>
+        genericType match {
+          case LTCtxtRegister(reg) =>
+            StoreCtxt(k.update(_ >> 'reg)(_.updated(reg, value)))
 
-      case LTArgRegister(argReg) =>
-        if (argReg < k.argvec.elem.size) {
-          StoreCtxt(k.update(_ >> 'argvec >> 'elem)(_.updated(argReg, value)))
-        } else {
-          StoreFail
+          case LTArgRegister(argReg) =>
+            if (argReg < k.argvec.elem.size) {
+              StoreCtxt(
+                k.update(_ >> 'argvec >> 'elem)(_.updated(argReg, value)))
+            } else {
+              StoreFail
+            }
+
+          case LTLexVariable(indirect, level, offset) =>
+            k.env.setLex(indirect, level, offset, value) match {
+              case env if env != Ob.INVALID => StoreCtxt(k.set(_ >> 'env)(env))
+              case _ => StoreFail
+            }
+
+          case LTAddrVariable(indirect, level, offset) =>
+            k.env.setAddr(indirect, level, offset, value) match {
+              case env if env != Ob.INVALID => StoreCtxt(k.set(_ >> 'env)(env))
+              case _ => StoreFail
+            }
+
+          case LTGlobalVariable(offset) =>
+            if (offset < globalEnv.numberOfSlots()) {
+              StoreGlobal(
+                globalEnv.update(_ >> 'slot)(_.updated(offset, value)))
+            } else {
+              StoreFail
+            }
+
+          case LTBitField(indirect, level, offset, spanSize, sign) =>
+            if (!isFixNum(value)) {
+              k.env.setField(indirect, level, offset, spanSize, fixVal(value)) match {
+                case env if env != Ob.INVALID =>
+                  StoreCtxt(k.set(_ >> 'env)(env))
+                case _ => StoreFail
+              }
+            } else {
+              StoreFail
+            }
+
+          case LTBitField00(offset, spanSize, sign) =>
+            if (!isFixNum(value)) {
+              k.env.setField(0, 0, offset, spanSize, fixVal(value)) match {
+                case env if env != Ob.INVALID =>
+                  StoreCtxt(k.set(_ >> 'env)(env))
+                case _ => StoreFail
+              }
+            } else {
+              StoreFail
+            }
+
+          case LTLimbo => StoreFail
         }
-
-      case LTLexVariable(indirect, level, offset) =>
-        k.env.setLex(indirect, level, offset, value) match {
-          case Ob.INVALID => StoreFail
-          case env => StoreCtxt(k.set(_ >> 'env)(env))
-        }
-
-      case LTAddrVariable(indirect, level, offset) =>
-        k.env.setAddr(indirect, level, offset, value) match {
-          case Ob.INVALID => StoreFail
-          case env => StoreCtxt(k.set(_ >> 'env)(env))
-        }
-
-      case LTGlobalVariable(offset) =>
-        if (offset < globalEnv.numberOfSlots()) {
-          StoreGlobal(globalEnv.update(_ >> 'slot)(_.updated(offset, value)))
-        } else {
-          StoreFail
-        }
-
-      case LTBitField(indirect, level, offset, spanSize, sign) =>
-        if (!isFixNum(value)) {
-          k.env.setField(indirect, level, offset, spanSize, fixVal(value)) match {
-            case Ob.INVALID => StoreFail
-            case env => StoreCtxt(k.set(_ >> 'env)(env))
-          }
-        } else {
-          StoreFail
-        }
-
-      case LTBitField00(offset, spanSize, sign) =>
-        if (!isFixNum(value)) {
-          k.env.setField(0, 0, offset, spanSize, fixVal(value)) match {
-            case Ob.INVALID => StoreFail
-            case env => StoreCtxt(k.set(_ >> 'env)(env))
-          }
-        } else {
-          StoreFail
-        }
-
-      case LTLimbo => StoreFail
     }
 
   def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob =
-    loc.genericType match {
-      case LTCtxtRegister(reg) =>
-        if (reg < Location.NumberOfCtxtRegs) {
-          k.reg(reg)
-        } else {
-          Ob.INVALID
+    loc.data match {
+      case Left(_) => Ob.INVALID
+      case Right(genericType) =>
+        genericType match {
+          case LTCtxtRegister(reg) =>
+            if (reg < NumberOfCtxtRegs) {
+              k.reg(reg)
+            } else {
+              Ob.INVALID
+            }
+
+          case LTArgRegister(argReg) =>
+            if (argReg < k.argvec.elem.size) {
+              k.argvec.elem(argReg)
+            } else {
+              Ob.INVALID
+            }
+
+          case LTLexVariable(indirect, level, offset) =>
+            k.env.getLex(indirect, level, offset)
+
+          case LTAddrVariable(indirect, level, offset) =>
+            k.env.getAddr(indirect, level, offset)
+
+          case LTGlobalVariable(offset) =>
+            if (offset < globalEnv.numberOfSlots()) {
+              globalEnv.slot(offset)
+            } else {
+              Ob.INVALID
+            }
+
+          case LTBitField(indirect, level, offset, spanSize, sign) =>
+            k.env.getField(indirect, level, offset, spanSize, sign)
+
+          case LTBitField00(offset, spanSize, sign) =>
+            k.env.getField(0, 0, offset, spanSize, sign)
+
+          case LTLimbo => Ob.INVALID
         }
-
-      case LTArgRegister(argReg) =>
-        if (argReg < k.argvec.elem.size) {
-          k.argvec.elem(argReg)
-        } else {
-          Ob.INVALID
-        }
-
-      case LTLexVariable(indirect, level, offset) =>
-        k.env.getLex(indirect, level, offset)
-
-      case LTAddrVariable(indirect, level, offset) =>
-        k.env.getAddr(indirect, level, offset)
-
-      case LTGlobalVariable(offset) =>
-        if (offset < globalEnv.numberOfSlots()) {
-          globalEnv.slot(offset)
-        } else {
-          Ob.INVALID
-        }
-
-      case LTBitField(indirect, level, offset, spanSize, sign) =>
-        k.env.getField(indirect, level, offset, spanSize, sign)
-
-      case LTBitField00(offset, spanSize, sign) =>
-        k.env.getField(0, 0, offset, spanSize, sign)
-
-      case LTLimbo => Ob.INVALID
     }
 
   def printRep(loc: Location): String = {
@@ -149,90 +176,223 @@ object Location {
                      "rcvr",
                      "monitor")
 
-    loc.genericType match {
-      case LTCtxtRegister(reg) =>
-        if (0 < reg && reg < Location.NumberOfCtxtRegs) {
-          names(reg)
-        } else {
-          s"unknown ctxt register 0x$reg%x"
+    loc.data match {
+      case Left(_) => {
+        Misc.suicide("Location.printRep: not a genericType")
+        ""
+      }
+
+      case Right(genericType) =>
+        genericType match {
+          case LTCtxtRegister(reg) =>
+            if (0 < reg && reg < NumberOfCtxtRegs) {
+              names(reg)
+            } else {
+              s"unknown ctxt register 0x$reg%x"
+            }
+
+          case LTArgRegister(argReg) =>
+            s"arg[$argReg]"
+
+          case LTLexVariable(indirect, level, offset) => {
+            val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+            s"addr[$level,$offsetStr]"
+          }
+
+          case LTAddrVariable(indirect, level, offset) => {
+            val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+            s"addr[$level,$offsetStr]"
+          }
+
+          case LTGlobalVariable(offset) =>
+            s"global[$offset]"
+
+          case LTBitField(indirect, level, offset, spanSize, sign) => {
+            val signStr = if (sign != 0) "s" else "u"
+            val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+            s"${signStr}fld[$level,$offsetStr,$spanSize]"
+          }
+
+          case LTBitField00(offset, spanSize, sign) => {
+            val signStr = if (sign != 0) "s" else "u"
+            s"${signStr}fld[$offset,$spanSize]"
+          }
+
+          case LTLimbo => "limbo"
         }
-
-      case LTArgRegister(argReg) =>
-        s"arg[$argReg]"
-
-      case LTLexVariable(indirect, level, offset) => {
-        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-        s"addr[$level,$offsetStr]"
-      }
-
-      case LTAddrVariable(indirect, level, offset) => {
-        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-        s"addr[$level,$offsetStr]"
-      }
-
-      case LTGlobalVariable(offset) =>
-        s"global[$offset]"
-
-      case LTBitField(indirect, level, offset, spanSize, sign) => {
-        val signStr = if (sign != 0) "s" else "u"
-        val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-        s"${signStr}fld[$level,$offsetStr,$spanSize]"
-      }
-
-      case LTBitField00(offset, spanSize, sign) => {
-        val signStr = if (sign != 0) "s" else "u"
-        s"${signStr}fld[$offset,$spanSize]"
-      }
-
-      case LTLimbo => "limbo"
     }
   }
 
   def valWRT(loc: Location, v: Ob, globalEnv: TblObject): Ob =
-    loc.genericType match {
-      case LTLexVariable(indirect, level, offset) =>
-        v.getLex(indirect, level, offset)
-
-      case LTAddrVariable(indirect, level, offset) =>
-        v.getAddr(indirect, level, offset)
-
-      case LTGlobalVariable(offset) =>
-        globalEnv.getLex(1, 0, offset)
-
-      case LTBitField(indirect, level, offset, spanSize, sign) =>
-        v.getField(indirect, level, offset, spanSize, sign)
-
-      case LTBitField00(offset, spanSize, sign) =>
-        v.getField(0, 0, offset, spanSize, sign)
-
-      case LTLimbo => Ob.ABSENT
-
-      case _ => {
-        Misc.suicide("valWrt")
+    loc.data match {
+      case Left(_) => {
+        Misc.suicide(s"Location.valWrt: $loc")
         null
       }
+
+      case Right(genericType) =>
+        genericType match {
+          case LTLexVariable(indirect, level, offset) =>
+            v.getLex(indirect, level, offset)
+
+          case LTAddrVariable(indirect, level, offset) =>
+            v.getAddr(indirect, level, offset)
+
+          case LTGlobalVariable(offset) =>
+            globalEnv.getLex(1, 0, offset)
+
+          case LTBitField(indirect, level, offset, spanSize, sign) =>
+            v.getField(indirect, level, offset, spanSize, sign)
+
+          case LTBitField00(offset, spanSize, sign) =>
+            v.getField(0, 0, offset, spanSize, sign)
+
+          case LTLimbo => Ob.ABSENT
+
+          case _ => {
+            Misc.suicide(s"Location.valWrt: $loc")
+            null
+          }
+        }
     }
 
   def setValWrt(loc: Location, v: Ob, globalEnv: TblObject, value: Ob): Ob =
-    loc.genericType match {
-      case LTLexVariable(indirect, level, offset) =>
-        v.setLex(indirect, level, offset, value)
-
-      case LTAddrVariable(indirect, level, offset) =>
-        v.setAddr(indirect, level, offset, value)
-
-      case LTGlobalVariable(offset) =>
-        globalEnv.setLex(1, 0, offset, value)
-
-      case LTBitField(indirect, level, offset, spanSize, sign) =>
-        v.setField(indirect, level, offset, spanSize, fixVal(value))
-
-      case LTBitField00(offset, spanSize, sign) =>
-        v.setField(0, 0, offset, spanSize, fixVal(value))
-
-      case _ => {
-        Misc.suicide("setValWrt")
+    loc.data match {
+      case Left(_) => {
+        Misc.suicide(s"Location.setValWrt: $loc")
         null
       }
+
+      case Right(genericType) =>
+        genericType match {
+          case LTLexVariable(indirect, level, offset) =>
+            v.setLex(indirect, level, offset, value)
+
+          case LTAddrVariable(indirect, level, offset) =>
+            v.setAddr(indirect, level, offset, value)
+
+          case LTGlobalVariable(offset) =>
+            globalEnv.setLex(1, 0, offset, value)
+
+          case LTBitField(indirect, level, offset, spanSize, sign) =>
+            v.setField(indirect, level, offset, spanSize, fixVal(value))
+
+          case LTBitField00(offset, spanSize, sign) =>
+            v.setField(0, 0, offset, spanSize, fixVal(value))
+
+          case _ => {
+            Misc.suicide(s"Location.setValWrt: $loc")
+            null
+          }
+        }
     }
+
+  def adjustLevel(loc: Location, adjustment: Int): Location =
+    loc.data match {
+      case Left(_) => {
+        Misc.suicide(s"Location.setValWrt: $loc")
+        null
+      }
+
+      case Right(genericType) =>
+        Location(Right(genericType match {
+          case LTLexVariable(indirect, level, offset) =>
+            LTLexVariable(indirect, level + adjustment, offset)
+
+          case LTAddrVariable(indirect, level, offset) =>
+            LTAddrVariable(indirect, level + adjustment, offset)
+
+          case LTBitField(indirect, level, offset, spanSize, sign) =>
+            LTBitField(indirect, level + adjustment, offset, spanSize, sign)
+
+          case _ => {
+            Misc.suicide(s"Location.adjustLevel: $loc")
+            null
+          }
+        }))
+    }
+
+  def CtxtReg(n: Int): Location = {
+    if (n >= NumberOfCtxtRegs) {
+      Misc.suicide(s"Location.CtxtReg: invalid ctxt register ($n)");
+      null
+    }
+
+    Location(Right(LTCtxtRegister(n)))
+  }
+
+  def ArgReg(n: Int): Location = {
+    if (n > MaxArgs) {
+      Misc.suicide(s"Location.ArgReg: invalid arg register index ($n)")
+      null
+    }
+
+    Location(Right(LTArgRegister(n)))
+  }
+
+  def LexVar(level: Int, offset: Int, indirect: Int): Location = {
+    if (level >= (1 << LexLevelSize) || offset >= (1 << LexOffsetSize)) {
+      val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+      Misc.suicide(
+        s"Location.LexVar: unrepresentable location (lex[$level,$offsetStr])")
+      null
+    }
+    Location(Right(LTLexVariable(if (indirect == 0) 0 else 1, level, offset)))
+  }
+
+  def AddrVar(level: Int, offset: Int, indirect: Int): Location = {
+    if (level >= (1 << LexLevelSize) || offset >= (1 << LexOffsetSize)) {
+      val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+      Misc.suicide(
+        s"Location.AddrVar: unrepresentable location (addr[$level,$offsetStr])")
+      null
+    }
+    Location(Right(LTAddrVariable(if (indirect == 0) 0 else 1, level, offset)))
+  }
+
+  def GlobalVar(n: Int): Location = {
+    if (n >= (1 << GlobalOffsetSize)) {
+      Misc.suicide(
+        s"Location.GlobalVar: unrepresentable location (global[$n])")
+      null
+    }
+
+    Location(Right(LTGlobalVariable(n)))
+  }
+
+  def BitField(level: Int,
+               offset: Int,
+               span: Int,
+               indirect: Int,
+               sign: Int): Location = {
+    if (level >= (1 << BitFieldLevelSize)
+        || offset >= (1 << BitFieldOffsetSize)
+        || span > (1 << BitFieldSpanSize)) {
+      val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
+      val signStr = if (sign == 0) "u" else "s"
+      Misc.suicide(
+        s"Location.BitField: unrepresentable location (${signStr}fld[$level,$offsetStr,$span])")
+      null
+    }
+
+    Location(Right(LTBitField(indirect, level, offset, span, sign)))
+  }
+
+  def BitField00(offset: Int, span: Int, sign: Int): Location = {
+    if (offset >= (1 << BitField00OffsetSize)
+        || span > (1 << BitField00SpanSize)) {
+      val signStr = if (sign == 0) "u" else "s"
+      Misc.suicide(
+        s"Location.BitField: unrepresentable location (${signStr}fld[$offset,$span])")
+      null
+    }
+
+    Location(Right(LTBitField00(offset, span, sign)))
+  }
+
+  def Limbo(): Location = Location(Right(LTLimbo))
+
+  val LocLimbo = Limbo()
+  val LocRslt = CtxtReg(CRN_Rslt)
+  val LocTrgt = CtxtReg(CRN_Trgt)
 }
