@@ -1,6 +1,8 @@
 package coop.rchain.rosette
 
-case class Location(data: Either[Ob, Location.GenericType])
+sealed trait Location
+case class LocationAtom(atom: Ob) extends Location
+case class LocationGT(genericType: Location.GenericType) extends Location
 
 object Location {
   import Ob.Lenses._
@@ -28,8 +30,8 @@ object Location {
   val BitField00OffsetSize = 17
   val BitField00SpanSize = 5
 
-  object PLACEHOLDER extends Location(Right(LTLimbo))
-  object LIMBO extends Location(Right(LTLimbo))
+  object PLACEHOLDER extends LocationGT(LTLimbo)
+  object LIMBO extends LocationGT(LTLimbo)
 
   sealed trait GenericType
   case class LTCtxtRegister(reg: Int) extends GenericType
@@ -61,9 +63,9 @@ object Location {
             k: Ctxt,
             globalEnv: TblObject,
             value: Ob): StoreResult =
-    loc.data match {
-      case Left(_) => StoreFail
-      case Right(genericType) =>
+    loc match {
+      case LocationAtom(_) => StoreFail
+      case LocationGT(genericType) =>
         genericType match {
           case LTCtxtRegister(reg) =>
             StoreCtxt(k.update(_ >> 'reg)(_.updated(reg, value)))
@@ -123,9 +125,9 @@ object Location {
     }
 
   def fetch(loc: Location, k: Ctxt, globalEnv: TblObject): Ob =
-    loc.data match {
-      case Left(_) => Ob.INVALID
-      case Right(genericType) =>
+    loc match {
+      case LocationAtom(_) => Ob.INVALID
+      case LocationGT(genericType) =>
         genericType match {
           case LTCtxtRegister(reg) =>
             if (reg < NumberOfCtxtRegs) {
@@ -176,13 +178,13 @@ object Location {
                      "rcvr",
                      "monitor")
 
-    loc.data match {
-      case Left(_) => {
-        suicide("Location.printRep: not a genericType")
+    loc match {
+      case LocationAtom(_) => {
+        suicide("Location.printRep: not a generic type")
         ""
       }
 
-      case Right(genericType) =>
+      case LocationGT(genericType) =>
         genericType match {
           case LTCtxtRegister(reg) =>
             if (0 <= reg && reg < NumberOfCtxtRegs) {
@@ -224,13 +226,13 @@ object Location {
   }
 
   def valWRT(loc: Location, v: Ob, globalEnv: TblObject): Ob =
-    loc.data match {
-      case Left(_) => {
+    loc match {
+      case LocationAtom(_) => {
         suicide(s"Location.valWrt: $loc")
         null
       }
 
-      case Right(genericType) =>
+      case LocationGT(genericType) =>
         genericType match {
           case LTLexVariable(indirect, level, offset) =>
             v.getLex(indirect, level, offset)
@@ -257,13 +259,13 @@ object Location {
     }
 
   def setValWrt(loc: Location, v: Ob, globalEnv: TblObject, value: Ob): Ob =
-    loc.data match {
-      case Left(_) => {
+    loc match {
+      case LocationAtom(_) => {
         suicide(s"Location.setValWrt: $loc")
         null
       }
 
-      case Right(genericType) =>
+      case LocationGT(genericType) =>
         genericType match {
           case LTLexVariable(indirect, level, offset) =>
             v.setLex(indirect, level, offset, value)
@@ -288,14 +290,14 @@ object Location {
     }
 
   def adjustLevel(loc: Location, adjustment: Int): Location =
-    loc.data match {
-      case Left(_) => {
-        suicide(s"Location.setValWrt: $loc")
+    loc match {
+      case LocationAtom(_) => {
+        suicide(s"Location.adjustLevel: $loc")
         null
       }
 
-      case Right(genericType) =>
-        Location(Right(genericType match {
+      case LocationGT(genericType) =>
+        LocationGT(genericType match {
           case LTLexVariable(indirect, level, offset) =>
             LTLexVariable(indirect, level + adjustment, offset)
 
@@ -309,7 +311,7 @@ object Location {
             suicide(s"Location.adjustLevel: $loc")
             null
           }
-        }))
+        })
     }
 
   def CtxtReg(n: Int): Location = {
@@ -318,7 +320,7 @@ object Location {
       null
     }
 
-    Location(Right(LTCtxtRegister(n)))
+    LocationGT(LTCtxtRegister(n))
   }
 
   def ArgReg(n: Int): Location = {
@@ -327,7 +329,7 @@ object Location {
       null
     }
 
-    Location(Right(LTArgRegister(n)))
+    LocationGT(LTArgRegister(n))
   }
 
   def LexVar(level: Int, offset: Int, indirect: Int): Location = {
@@ -337,7 +339,7 @@ object Location {
         s"Location.LexVar: unrepresentable location (lex[$level,$offsetStr])")
       null
     }
-    Location(Right(LTLexVariable(if (indirect == 0) 0 else 1, level, offset)))
+    LocationGT(LTLexVariable(if (indirect == 0) 0 else 1, level, offset))
   }
 
   def AddrVar(level: Int, offset: Int, indirect: Int): Location = {
@@ -347,7 +349,7 @@ object Location {
         s"Location.AddrVar: unrepresentable location (addr[$level,$offsetStr])")
       null
     }
-    Location(Right(LTAddrVariable(if (indirect == 0) 0 else 1, level, offset)))
+    LocationGT(LTAddrVariable(if (indirect == 0) 0 else 1, level, offset))
   }
 
   def GlobalVar(n: Int): Location = {
@@ -356,7 +358,7 @@ object Location {
       null
     }
 
-    Location(Right(LTGlobalVariable(n)))
+    LocationGT(LTGlobalVariable(n))
   }
 
   def BitField(level: Int,
@@ -374,7 +376,7 @@ object Location {
       null
     }
 
-    Location(Right(LTBitField(indirect, level, offset, span, sign)))
+    LocationGT(LTBitField(indirect, level, offset, span, sign))
   }
 
   def BitField00(offset: Int, span: Int, sign: Int): Location = {
@@ -386,10 +388,10 @@ object Location {
       null
     }
 
-    Location(Right(LTBitField00(offset, span, sign)))
+    LocationGT(LTBitField00(offset, span, sign))
   }
 
-  def Limbo(): Location = Location(Right(LTLimbo))
+  def Limbo(): Location = LocationGT(LTLimbo)
 
   val LocLimbo = Limbo()
   val LocRslt = CtxtReg(CRN_Rslt)
