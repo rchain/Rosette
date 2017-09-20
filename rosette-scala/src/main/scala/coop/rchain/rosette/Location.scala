@@ -59,14 +59,14 @@ object Location {
 
       case LTLexVariable(indirect, level, offset) =>
         k.env.setLex(indirect, level, offset, value) match {
-          case Ob.INVALID => StoreFail
-          case env => StoreCtxt(k.set(_ >> 'env)(env))
+          case env if env != Ob.INVALID => StoreCtxt(k.set(_ >> 'env)(env))
+          case _ => StoreFail
         }
 
       case LTAddrVariable(indirect, level, offset) =>
         k.env.setAddr(indirect, level, offset, value) match {
-          case Ob.INVALID => StoreFail
-          case env => StoreCtxt(k.set(_ >> 'env)(env))
+          case env if env != Ob.INVALID => StoreCtxt(k.set(_ >> 'env)(env))
+          case _ => StoreFail
         }
 
       case LTGlobalVariable(offset) =>
@@ -79,8 +79,8 @@ object Location {
       case LTBitField(indirect, level, offset, spanSize, sign) =>
         if (!isFixNum(value)) {
           k.env.setField(indirect, level, offset, spanSize, fixVal(value)) match {
-            case Ob.INVALID => StoreFail
-            case env => StoreCtxt(k.set(_ >> 'env)(env))
+            case env if env != Ob.INVALID => StoreCtxt(k.set(_ >> 'env)(env))
+            case _ => StoreFail
           }
         } else {
           StoreFail
@@ -89,8 +89,8 @@ object Location {
       case LTBitField00(offset, spanSize, sign) =>
         if (!isFixNum(value)) {
           k.env.setField(0, 0, offset, spanSize, fixVal(value)) match {
-            case Ob.INVALID => StoreFail
-            case env => StoreCtxt(k.set(_ >> 'env)(env))
+            case env if env != Ob.INVALID => StoreCtxt(k.set(_ >> 'env)(env))
+            case _ => StoreFail
           }
         } else {
           StoreFail
@@ -151,10 +151,10 @@ object Location {
 
     loc.genericType match {
       case LTCtxtRegister(reg) =>
-        if (0 < reg && reg < Location.NumberOfCtxtRegs) {
+        if (0 <= reg && reg < Location.NumberOfCtxtRegs) {
           names(reg)
         } else {
-          s"unknown ctxt register 0x$reg%x"
+          f"unknown ctxt register 0x$reg%x"
         }
 
       case LTArgRegister(argReg) =>
@@ -162,7 +162,7 @@ object Location {
 
       case LTLexVariable(indirect, level, offset) => {
         val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-        s"addr[$level,$offsetStr]"
+        s"lex[$level,$offsetStr]"
       }
 
       case LTAddrVariable(indirect, level, offset) => {
@@ -208,7 +208,7 @@ object Location {
       case LTLimbo => Ob.ABSENT
 
       case _ => {
-        Misc.suicide("valWrt")
+        suicide("valWrt")
         null
       }
     }
@@ -231,7 +231,7 @@ object Location {
         v.setField(0, 0, offset, spanSize, fixVal(value))
 
       case _ => {
-        Misc.suicide("setValWrt")
+        suicide("setValWrt")
         null
       }
     }
