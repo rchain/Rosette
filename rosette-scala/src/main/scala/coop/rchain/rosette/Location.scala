@@ -178,7 +178,7 @@ object Location {
 
     loc.data match {
       case Left(_) => {
-        Misc.suicide("Location.printRep: not a genericType")
+        suicide("Location.printRep: not a genericType")
         ""
       }
 
@@ -226,7 +226,7 @@ object Location {
   def valWRT(loc: Location, v: Ob, globalEnv: TblObject): Ob =
     loc.data match {
       case Left(_) => {
-        Misc.suicide(s"Location.valWrt: $loc")
+        suicide(s"Location.valWrt: $loc")
         null
       }
 
@@ -250,7 +250,7 @@ object Location {
           case LTLimbo => Ob.ABSENT
 
           case _ => {
-            Misc.suicide(s"Location.valWrt: $loc")
+            suicide(s"Location.valWrt: $loc")
             null
           }
         }
@@ -259,7 +259,7 @@ object Location {
   def setValWrt(loc: Location, v: Ob, globalEnv: TblObject, value: Ob): Ob =
     loc.data match {
       case Left(_) => {
-        Misc.suicide(s"Location.setValWrt: $loc")
+        suicide(s"Location.setValWrt: $loc")
         null
       }
 
@@ -281,7 +281,7 @@ object Location {
             v.setField(0, 0, offset, spanSize, fixVal(value))
 
           case _ => {
-            Misc.suicide(s"Location.setValWrt: $loc")
+            suicide(s"Location.setValWrt: $loc")
             null
           }
         }
@@ -290,7 +290,7 @@ object Location {
   def adjustLevel(loc: Location, adjustment: Int): Location =
     loc.data match {
       case Left(_) => {
-        Misc.suicide(s"Location.setValWrt: $loc")
+        suicide(s"Location.setValWrt: $loc")
         null
       }
 
@@ -306,7 +306,7 @@ object Location {
             LTBitField(indirect, level + adjustment, offset, spanSize, sign)
 
           case _ => {
-            Misc.suicide(s"Location.adjustLevel: $loc")
+            suicide(s"Location.adjustLevel: $loc")
             null
           }
         }))
@@ -314,7 +314,7 @@ object Location {
 
   def CtxtReg(n: Int): Location = {
     if (n >= NumberOfCtxtRegs) {
-      Misc.suicide(s"Location.CtxtReg: invalid ctxt register ($n)");
+      suicide(s"Location.CtxtReg: invalid ctxt register ($n)");
       null
     }
 
@@ -323,7 +323,7 @@ object Location {
 
   def ArgReg(n: Int): Location = {
     if (n > MaxArgs) {
-      Misc.suicide(s"Location.ArgReg: invalid arg register index ($n)")
+      suicide(s"Location.ArgReg: invalid arg register index ($n)")
       null
     }
 
@@ -333,7 +333,7 @@ object Location {
   def LexVar(level: Int, offset: Int, indirect: Int): Location = {
     if (level >= (1 << LexLevelSize) || offset >= (1 << LexOffsetSize)) {
       val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-      Misc.suicide(
+      suicide(
         s"Location.LexVar: unrepresentable location (lex[$level,$offsetStr])")
       null
     }
@@ -343,7 +343,7 @@ object Location {
   def AddrVar(level: Int, offset: Int, indirect: Int): Location = {
     if (level >= (1 << LexLevelSize) || offset >= (1 << LexOffsetSize)) {
       val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-      Misc.suicide(
+      suicide(
         s"Location.AddrVar: unrepresentable location (addr[$level,$offsetStr])")
       null
     }
@@ -352,8 +352,7 @@ object Location {
 
   def GlobalVar(n: Int): Location = {
     if (n >= (1 << GlobalOffsetSize)) {
-      Misc.suicide(
-        s"Location.GlobalVar: unrepresentable location (global[$n])")
+      suicide(s"Location.GlobalVar: unrepresentable location (global[$n])")
       null
     }
 
@@ -370,7 +369,7 @@ object Location {
         || span > (1 << BitFieldSpanSize)) {
       val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
       val signStr = if (sign == 0) "u" else "s"
-      Misc.suicide(
+      suicide(
         s"Location.BitField: unrepresentable location (${signStr}fld[$level,$offsetStr,$span])")
       null
     }
@@ -382,7 +381,7 @@ object Location {
     if (offset >= (1 << BitField00OffsetSize)
         || span > (1 << BitField00SpanSize)) {
       val signStr = if (sign == 0) "u" else "s"
-      Misc.suicide(
+      suicide(
         s"Location.BitField: unrepresentable location (${signStr}fld[$offset,$span])")
       null
     }

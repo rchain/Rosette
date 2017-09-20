@@ -261,7 +261,7 @@ trait VirtualMachine {
   def execute(op: OpXmitTag, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
-      .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'ctxt >> 'tag)(Location(Left(state.code.lit(op.v))))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
@@ -288,7 +288,7 @@ trait VirtualMachine {
   def execute(op: OpXmitTagXtnd, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
-      .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'ctxt >> 'tag)(Location(Left(state.code.lit(op.v))))
       .set(_ >> 'xmitData)((op.u, op.n))
       .set(_ >> 'doXmitFlag)(true)
 
@@ -316,7 +316,7 @@ trait VirtualMachine {
   def execute(op: OpApplyPrimTag, state: VMState): VMState =
     state
       .set(_ >> 'ctxt >> 'nargs)(op.m)
-      .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'loc)(Location(Left(state.code.lit(op.v))))
       .updateSelf(state => {
         val prim = Prim.nthPrim(op.k)
         val result = if (op.u) { unwindAndApplyPrim(prim) } else {
@@ -433,7 +433,7 @@ trait VirtualMachine {
 
   def execute(op: OpRtnTag, state: VMState): VMState =
     state
-      .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'ctxt >> 'tag)(Location(Left(state.code.lit(op.v))))
       .set(_ >> 'doRtnData)(op.n)
       .set(_ >> 'doRtnFlag)(true)
 
@@ -451,7 +451,7 @@ trait VirtualMachine {
 
   def execute(op: OpUpcallRtn, state: VMState): VMState =
     state
-      .set(_ >> 'ctxt >> 'tag >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'ctxt >> 'tag)(Location(Left(state.code.lit(op.v))))
       .updateSelf(state => {
         val ctxt = state.ctxt
 
@@ -600,7 +600,7 @@ trait VirtualMachine {
 
   def execute(op: OpXferRsltToDest, state: VMState): VMState =
     state
-      .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'loc)(Location(Left(state.code.lit(op.v))))
       .updateSelf(
         state => {
           import Location._
@@ -619,7 +619,7 @@ trait VirtualMachine {
 
   def execute(op: OpXferSrcToRslt, state: VMState): VMState =
     state
-      .set(_ >> 'loc >> 'atom)(state.code.lit(op.v))
+      .set(_ >> 'loc)(Location(Left(state.code.lit(op.v))))
       .set(_ >> 'ctxt >> 'rslt)(
         Location.fetch(state.loc, state.ctxt, state.globalEnv))
 
