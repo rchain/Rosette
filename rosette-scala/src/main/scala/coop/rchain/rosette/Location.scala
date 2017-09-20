@@ -198,7 +198,7 @@ object Location {
 
           case LTLexVariable(indirect, level, offset) => {
             val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
-            s"addr[$level,$offsetStr]"
+            s"lex[$level,$offsetStr]"
           }
 
           case LTAddrVariable(indirect, level, offset) => {
