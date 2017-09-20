@@ -190,7 +190,7 @@ object Location {
             if (0 <= reg && reg < NumberOfCtxtRegs) {
               names(reg)
             } else {
-              s"unknown ctxt register 0x$reg%x"
+              f"unknown ctxt register 0x$reg%x"
             }
 
           case LTArgRegister(argReg) =>
