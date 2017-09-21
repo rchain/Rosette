@@ -1142,8 +1142,8 @@ DEF("run-with-env",obRunWithEnv, 2, 3)
 
     CHECK(0, Code, code);
     if (NARGS == 3) {
-    CHECK(2, Monitor, m);
-    mon = m;
+    	CHECK(2, Monitor, m);
+    	mon = m;
     }
 
     Ctxt* newCtxt = Ctxt::create (code, NIL, __CTXT__, 0);
@@ -1153,6 +1153,8 @@ DEF("run-with-env",obRunWithEnv, 2, 3)
 
     return vm->upcall(newCtxt);
 }
+
+
 DEF("suicide",obSuicide, 0, 0)
 {
     return INVALID;
