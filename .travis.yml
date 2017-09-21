@@ -1,0 +1,27 @@
+language: scala
+jdk: oraclejdk8
+scala: 2.12.3
+
+before_script: cd rosette-scala
+
+cache:
+  directories:
+  - "$HOME/.ivy2/cache"
+  - "$HOME/.sbt"
+
+script:
+   - sbt ++$TRAVIS_SCALA_VERSION test compile assembly
+
+notifications:
+  email:
+    on_success: never
+
+deploy:
+  provider: releases
+  file: "target/scala-2.12/rosette.jar"
+  skip_cleanup: true
+  api_key:
+    secure: b277oOQ6tx5KkUTv6KWbL7iWnJuMUagQOkB/YaSzGBlEHHAOkTkHI3yNYDAy+GZ8PJRU6WZ0Q8NOt/xaaxtYl6+UvwunHPN+70vhjlOAozT2rZ27PYV3H49ejLWoeY/PkN12AYhc19nX+TajJbHwYhrpndW+ETvMLYntKE53Lu/YACnbEnJAPNEs4ciflfr5ZYyidtquyebqgSPQ8Iox6jrwu44/Lh154sWaQ+QZyj1WwvU16FuHjoayUzaKsB5Fk057LG8PuwYBWK5eyvBOgCvnOpQCq5inUXCvFbD9WrMGz33yXXdQo2SwQ+WZaW1qDTa/88nBScIoEwIKzQGenYq7w0X+hGxRbsrc9bVSqliA9NPYpVzwXts8BGf8SFMFkqJac/9TLfPk6z3C018NLSS8DIxCv3K8bDrkrs/m3WUjTmk2NLLEyZa7mScNURQMOim5ZGOgpPxrzqMGMIVwHePkgRd6FrwxcfGZN+WmEeoWrzzrVESjEdmcOGTu/fB4JEZRRxHfAFhT/BSAZ/ZM7UPYXojuADflRMF/vheuh89NOSSraUzjJqaSYrzuqHHIEgrAuX1bEa1e9mdAuLVb6ml4G79anULRDC8z5rThZqefDqJDV/3b7y+Fy3x6bH2vQBMjyNIP8/73TU3uO0zdu5k9KX/5JVXZJ1JPq7kr+Vc=
+  on:
+    branch: master
+    tags: true
