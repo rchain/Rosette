@@ -4,11 +4,6 @@ scala: 2.12.3
 
 before_script: cd rosette-scala
 
-branches:
-  only:
-  - dev
-  - master
-
 cache:
   directories:
   - "$HOME/.ivy2/cache"
