@@ -7,28 +7,19 @@ case class LocationGT(genericType: Location.GenericType) extends Location
 object Location {
   import Ob.Lenses._
 
-  val NumberOfCtxtRegs = 10
-  val CRN_Rslt = 0
-  val CRN_Trgt = 1
-  val CRN_Argvec = 2
-  val CRN_Env = 3
-  val CRN_Code = 4
-  val CRN_Ctxt = 5
-  val CRN_Self = 6
-  val CRN_SelfEnv = 7
-  val CRN_Rcvr = 8
-  val CRN_Monitor = 9
-
+  val AddrLevelSize = 5
+  val AddrOffsetSize = 14
   val ArgRegIndexSize = 8
-  val MaxArgs = (1 << ArgRegIndexSize) - 1
-  val LexLevelSize = 5
-  val LexOffsetSize = 14
-  val GlobalOffsetSize = 16
   val BitFieldLevelSize = 4
   val BitFieldOffsetSize = 12
   val BitFieldSpanSize = 5
   val BitField00OffsetSize = 17
   val BitField00SpanSize = 5
+  val GlobalOffsetSize = 16
+  val LexLevelSize = 5
+  val LexOffsetSize = 14
+  val MaxArgs = (1 << ArgRegIndexSize) - 1
+  val NumberOfCtxtRegs = 10
 
   object PLACEHOLDER extends LocationGT(LTLimbo)
   object LIMBO extends LocationGT(LTLimbo)
@@ -343,7 +334,7 @@ object Location {
   }
 
   def AddrVar(level: Int, offset: Int, indirect: Int): Location = {
-    if (level >= (1 << LexLevelSize) || offset >= (1 << LexOffsetSize)) {
+    if (level >= (1 << AddrLevelSize) || offset >= (1 << AddrOffsetSize)) {
       val offsetStr = if (indirect != 0) s"($offset)" else s"$offset"
       suicide(
         s"Location.AddrVar: unrepresentable location (addr[$level,$offsetStr])")
@@ -376,7 +367,12 @@ object Location {
       null
     }
 
-    LocationGT(LTBitField(indirect, level, offset, span, sign))
+    LocationGT(
+      LTBitField(indirect,
+                 level,
+                 offset,
+                 span % (1 << BitFieldSpanSize),
+                 if (sign == 0) 0 else 1))
   }
 
   def BitField00(offset: Int, span: Int, sign: Int): Location = {
@@ -388,12 +384,16 @@ object Location {
       null
     }
 
-    LocationGT(LTBitField00(offset, span, sign))
+    LocationGT(
+      LTBitField00(offset,
+                   span % (1 << BitFieldSpanSize),
+                   if (sign == 0) 0 else 1))
   }
 
   def Limbo(): Location = LocationGT(LTLimbo)
 
   val LocLimbo = Limbo()
-  val LocRslt = CtxtReg(CRN_Rslt)
-  val LocTrgt = CtxtReg(CRN_Trgt)
+
+  val LocRslt = CtxtReg(CtxtRegName.rslt)
+  val LocTrgt = CtxtReg(CtxtRegName.trgt)
 }

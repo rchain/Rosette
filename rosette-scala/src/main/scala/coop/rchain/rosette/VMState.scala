@@ -25,6 +25,7 @@ case class VMState(bytecodes: Map[Op, Long],
                    doAsyncWaitFlag: Boolean = false,
                    vmErrorFlag: Boolean = false,
                    exitFlag: Boolean = false,
+                   exitCode: Int = 0,
                    obCounts: Long = 0,
                    globalEnv: TblObject = TblObject.PLACEHOLDER)
     extends {
