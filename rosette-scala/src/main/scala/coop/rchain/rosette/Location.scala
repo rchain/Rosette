@@ -368,7 +368,7 @@ object Location {
     }
 
     LocationGT(
-      LTBitField(indirect,
+      LTBitField(if (indirect == 0) 0 else 1,
                  level,
                  offset,
                  span % (1 << BitFieldSpanSize),
@@ -386,7 +386,7 @@ object Location {
 
     LocationGT(
       LTBitField00(offset,
-                   span % (1 << BitFieldSpanSize),
+                   span % (1 << BitField00SpanSize),
                    if (sign == 0) 0 else 1))
   }
 
