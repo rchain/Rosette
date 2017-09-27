@@ -13,6 +13,7 @@ lazy val root = (project in file("."))
     name := "Rosette",
     libraryDependencies ++= Seq(
       "com.chuusai" %% "shapeless" % "2.3.2",
+      "org.typelevel" %% "cats" % "0.9.0",
       scalaTest % Test
     )
   )
