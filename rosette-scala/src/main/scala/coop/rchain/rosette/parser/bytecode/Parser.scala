@@ -295,26 +295,14 @@ object Parser {
 
               Right(OpIndLitToRslt(v))
 
-            case byte if byte.matches("11000vvv") =>
-              val v = byte.slice(0, 3)
+            case byte if byte.matches("1100vvvv") =>
+              val v = byte.slice(0, 4)
               val a = seq(1)
 
               Right(OpImmediateLitToArg(v, a))
 
-            case byte if byte.matches("11001xxx") =>
-              val v = byte.slice(0, 3)
-              val a = seq(1)
-
-              Right(OpImmediateLitToArg(v, a))
-
-            case byte if byte.matches("11010vvv") =>
-              val v = byte.slice(0, 3)
-              val r = seq(1).lowNibble
-
-              Right(OpImmediateLitToReg(v, r))
-
-            case byte if byte.matches("11011xxx") =>
-              val v = byte.slice(0, 3)
+            case byte if byte.matches("1101vvvv") =>
+              val v = byte.slice(0, 4)
               val r = seq(1).lowNibble
 
               Right(OpImmediateLitToReg(v, r))
