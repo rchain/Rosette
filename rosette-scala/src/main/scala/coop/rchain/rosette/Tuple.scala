@@ -10,4 +10,9 @@ object Tuple {
     new Tuple(null, null, null)
 
   val PLACEHOLDER = apply(0, None)
+
+  object NIL extends Ob {
+    override val meta = null
+    override val slot = null
+  }
 }

@@ -59,6 +59,16 @@ object Ob {
     override val slot = null
   }
 
+  case object NIV extends Ob {
+    override val meta = null
+    override val slot = null
+  }
+
+  object RBLTRUE extends Ob {
+    override val meta = null
+    override val slot = null
+  }
+
   object RBLFALSE extends Ob {
     override val meta = null
     override val slot = null

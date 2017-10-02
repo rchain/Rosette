@@ -14,7 +14,21 @@ trait VirtualMachine {
   def handleException(result: Ob, op: Op, loc: Location): Ob = null
   def handleFormalsMismatch(formals: Template): Ob = null
   def handleMissingBinding(key: Ob, argReg: Location): Ob = null
-  val vmLiterals: Seq[Ob] = new Array[Ob](0)
+
+  val vmLiterals: Seq[Ob] = Seq(
+    Fixnum(0),
+    Fixnum(1),
+    Fixnum(2),
+    Fixnum(3),
+    Fixnum(4),
+    Fixnum(5),
+    Fixnum(6),
+    Fixnum(7),
+    Ob.RBLTRUE,
+    Ob.RBLFALSE,
+    Tuple.NIL,
+    Ob.NIV
+  )
 
   def getNextStrand(state: VMState): (Boolean, VMState) =
     if (state.strandPool.isEmpty) {
