@@ -54,7 +54,7 @@ object Parser {
               val m = seq(1).highNibble
               val v = seq(1).lowNibble
 
-              Right(OpXmitTag(n, u, m, v))
+              Right(OpXmitTag(u, n, m, v))
 
             case byte if byte.matches("000101un") =>
               val n = byte.bit(0)
