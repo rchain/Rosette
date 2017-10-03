@@ -46,7 +46,7 @@ InstrOutstanding . Instruction ::=        "0" "0" "0" "0" "1" "0" Bit10Arg Bit8A
 -- fork                         11pp pppp pppp
 InstrFork . Instruction ::=               "0" "0" "0" "0" "1" "1" Bit10Arg ;
 
--- xmit/tag                0001 00nu mmmm vvvv             unwind if u;
+-- xmit/tag                0001 00un mmmm vvvv             unwind if u;
 --                                                         invoke trgt with m args and tag = litvec[v]
 --                                                         nxt if n;
 InstrXmitTag . Instruction ::=            "0" "0" "0" "1" "0" "0" Bit1Arg Bit1Arg Bit4Arg Bit4Arg ;
