@@ -1,5 +1,6 @@
 package coop.rchain.rosette
 
+import coop.rchain.rosette.Ob.ObTag
 import shapeless._
 import shapeless.OpticDefns.RootLens
 
@@ -12,6 +13,7 @@ trait Base
 trait Ob extends Base {
   val meta: Ob
   val slot: Seq[Ob]
+  val obTag: ObTag = null
 
   def extendWith(keymeta: Ob): Ob = null
   def extendWith(keymeta: Ob, argvec: Tuple): Ob = null
@@ -55,6 +57,16 @@ object Ob {
   }
 
   case object INVALID extends Ob {
+    override val meta = null
+    override val slot = null
+  }
+
+  case object NIV extends Ob {
+    override val meta = null
+    override val slot = null
+  }
+
+  object RBLTRUE extends Ob {
     override val meta = null
     override val slot = null
   }
