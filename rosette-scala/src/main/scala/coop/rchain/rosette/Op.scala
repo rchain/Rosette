@@ -10,7 +10,7 @@ case class OpPushAlloc(n: Int) extends Op
 case class OpExtend(v: Int) extends Op
 case class OpOutstanding(p: Int, n: Int) extends Op
 case class OpFork(p: Int) extends Op
-case class OpXmitTag(n: Boolean, u: Boolean, m: Int, v: Int) extends Op
+case class OpXmitTag(u: Boolean, n: Boolean, m: Int, v: Int) extends Op
 case class OpXmitArg(u: Boolean, n: Boolean, m: Int, a: Int) extends Op
 case class OpXmitReg(u: Boolean, n: Boolean, m: Int, r: Int) extends Op
 case class OpXmit(u: Boolean, n: Boolean, m: Int) extends Op
