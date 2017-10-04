@@ -8,13 +8,17 @@ case class Ctxt(argvec: Tuple,
                 monitor: Monitor,
                 nargs: Int,
                 outstanding: Int,
+                override val parent: Ob,
                 pc: PC,
                 reg: Seq[Ob],
                 rslt: Ob,
+                trgt: Ob,
                 selfEnv: Ob,
                 override val slot: Seq[Ob],
                 tag: Location)
     extends Ob {
+  def arg(n: Int): Option[Ob] = argvec.elem.lift(n)
+
   def ret(rslt: Ob): Boolean = true
 
   def scheduleStrand(state: VMState): VMState =
@@ -39,7 +43,10 @@ object Ctxt {
                    null,
                    null,
                    null,
+                   null,
+                   null,
                    null)
+
   object PLACEHOLDER
       extends Ctxt(null,
                    null,
@@ -49,6 +56,8 @@ object Ctxt {
                    null,
                    0,
                    0,
+                   null,
+                   null,
                    null,
                    null,
                    null,

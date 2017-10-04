@@ -11,6 +11,7 @@ case object Upcall extends LookupError
 trait Base
 
 trait Ob extends Base {
+  val parent: Ob
   val meta: Ob
   val slot: Seq[Ob]
   val obTag: ObTag = null
@@ -28,8 +29,8 @@ trait Ob extends Base {
   def is(value: Ob.ObTag): Boolean = true
   def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
     Right(null)
+  def matches(ctxt: Ctxt): Boolean = false
   def numberOfSlots(): Int = Math.max(0, slot.length - 2)
-  def parent(): Ob = null
   def setAddr(ind: Int, level: Int, offset: Int, value: Ob): Ob = null
   def setField(ind: Int,
                level: Int,
@@ -52,26 +53,31 @@ object Ob {
   case object OTlocation extends ObTag
 
   case object ABSENT extends Ob {
+    override val parent = null
     override val meta = null
     override val slot = null
   }
 
   case object INVALID extends Ob {
+    override val parent = null
     override val meta = null
     override val slot = null
   }
 
   case object NIV extends Ob {
+    override val parent = null
     override val meta = null
     override val slot = null
   }
 
   object RBLTRUE extends Ob {
+    override val parent = null
     override val meta = null
     override val slot = null
   }
 
   object RBLFALSE extends Ob {
+    override val parent = null
     override val meta = null
     override val slot = null
   }
