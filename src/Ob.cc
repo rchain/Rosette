@@ -1469,7 +1469,8 @@ DEF("random-number-init", randomNumberInit, 0, 0)
     srand(time(NULL));
     return NIV;
 }
-DEF("random-number",randomNumber, 0,0)
+
+DEF("random-number",randomNumber, 0, 0)
 {
     int random_number = std::rand();
     return FIXNUM(random_number);
