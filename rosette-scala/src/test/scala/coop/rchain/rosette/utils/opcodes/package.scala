@@ -4,9 +4,6 @@ import coop.rchain.rosette.PC.PLACEHOLDER
 import coop.rchain.rosette._
 
 package object opcodes {
-
-  val vm = new VirtualMachine {}
-
   val someObs: Seq[Ob] = Seq(Ob.NIV, Ob.ABSENT)
   val someTuple: Tuple = Tuple(someObs, Ob.NIV, Ob.NIV, Seq.empty)
 

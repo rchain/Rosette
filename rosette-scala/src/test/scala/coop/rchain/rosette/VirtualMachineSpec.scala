@@ -49,12 +49,14 @@ class VirtualMachineSpec extends WordSpec with Matchers {
       v = m,
       a = someObsInd)) {
       val updatedElem =
-        testState.ctxt.argvec.elem.updated(someObsInd, vm.vmLiterals(m))
+        testState.ctxt.argvec.elem
+          .updated(someObsInd, VirtualMachine.vmLiterals(m))
       _ shouldBe updatedElem
     }
 
     (theState >> 'ctxt >> 'reg on OpImmediateLitToReg(v = m, r = regInd)) {
-      val updatedReg = testState.ctxt.reg.updated(regInd, vm.vmLiterals(m))
+      val updatedReg =
+        testState.ctxt.reg.updated(regInd, VirtualMachine.vmLiterals(m))
       _ shouldBe updatedReg
     }
 
