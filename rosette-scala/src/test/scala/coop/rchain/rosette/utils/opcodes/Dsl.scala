@@ -39,5 +39,5 @@ object Dsl {
   object theState extends theState[HNil]
 
   def dispatch(op: Op, state: VMState = testState): VMState =
-    vm.executeDispatch(op, state)
+    VirtualMachine.executeDispatch(op, state)
 }
